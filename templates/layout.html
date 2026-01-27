@@ -7,22 +7,64 @@
   <title>adventure</title>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <link rel="stylesheet" href="/static/app.css" />
+  <script>
+    // Global function to update sidebar stats
+    function updateSidebarStats() {
+      // Look for stats-update in the swapped content first, then globally
+      const statsEl = document.querySelector('#game .stats-update') || document.querySelector('.stats-update');
+      if (statsEl) {
+        const strength = statsEl.getAttribute('data-strength');
+        const luck = statsEl.getAttribute('data-luck');
+        const health = statsEl.getAttribute('data-health');
+        const sidebarStrength = document.querySelector('#stat-strength');
+        const sidebarLuck = document.querySelector('#stat-luck');
+        const sidebarHealth = document.querySelector('#stat-health');
+        if (sidebarStrength && strength !== null) sidebarStrength.textContent = strength;
+        if (sidebarLuck && luck !== null) sidebarLuck.textContent = luck;
+        if (sidebarHealth && health !== null) sidebarHealth.textContent = health;
+      }
+    }
+    
+    // Set up event listeners
+    function initStatsUpdater() {
+      updateSidebarStats();
+      // Update after HTMX swaps
+      document.body.addEventListener('htmx:afterSwap', updateSidebarStats);
+    }
+    
+    // Update on initial load (works whether DOM is ready or not)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initStatsUpdater);
+    } else {
+      initStatsUpdater();
+    }
+    
+    // Also update after a short delay to catch any late-loading content
+    setTimeout(updateSidebarStats, 100);
+  </script>
 </head>
 <body>
   <main class="wrap">
-    <header class="bar">
-      <div>Strength: {{.State.Stats.Strength}}</div>
-      <div>Luck: {{.State.Stats.Luck}}</div>
-      <div>Health: {{.State.Stats.Health}}</div>
-    </header>
+    <div class="container">
+      <aside class="sidebar">
+        <div class="character-image">
+          <div class="character-placeholder">Character</div>
+        </div>
+        <div class="character-stats">
+          <div>Strength: <strong id="stat-strength">{{if .State}}{{.State.Stats.Strength}}{{else if .Start}}{{.Start.Stats.Strength}}{{end}}</strong></div>
+          <div>Luck: <strong id="stat-luck">{{if .State}}{{.State.Stats.Luck}}{{else if .Start}}{{.Start.Stats.Luck}}{{end}}</strong></div>
+          <div>Health: <strong id="stat-health">{{if .State}}{{.State.Stats.Health}}{{else if .Start}}{{.Start.Stats.Health}}{{end}}</strong></div>
+        </div>
+      </aside>
 
-    <section id="game">
-    {{if .Start}}
-        {{template "start.html" .Start}}
-    {{else}}
-        {{template "game.html" .}}
-    {{end}}
-    </section>
+      <section id="game" class="main-content">
+      {{if .Start}}
+          {{template "start.html" .Start}}
+      {{else}}
+          {{template "game.html" .}}
+      {{end}}
+      </section>
+    </div>
   </main>
 </body>
 </html>

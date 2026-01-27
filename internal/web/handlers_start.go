@@ -40,10 +40,10 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 // POST /reroll
 func (s *Server) handleReroll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	st := s.getOrCreateState(ctx, w, r)
+	st, sessionID := s.getOrCreateState(ctx, w, r)
 
 	st.Stats = game.RollStats()
-	_ = s.Store.Put(ctx, s.sessionID(r), st)
+	_ = s.Store.Put(ctx, sessionID, st)
 
 	vm := StartViewModel{Stats: st.Stats}
 	_ = s.Tmpl.ExecuteTemplate(w, "start.html", vm)
@@ -52,10 +52,10 @@ func (s *Server) handleReroll(w http.ResponseWriter, r *http.Request) {
 // POST /begin
 func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	st := s.getOrCreateState(ctx, w, r)
+	st, sessionID := s.getOrCreateState(ctx, w, r)
 
 	st.NodeID = s.Engine.Story.Start
-	_ = s.Store.Put(ctx, s.sessionID(r), st)
+	_ = s.Store.Put(ctx, sessionID, st)
 
 	vm, err := s.makeViewModel(st, "", nil, nil)
 	if err != nil {

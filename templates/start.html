@@ -1,27 +1,20 @@
 {{define "start.html"}}
 <h2>Create Your Adventurer</h2>
 
-
-<div class="stats">
-<div>Strength: <strong>{{.Stats.Strength}}</strong></div>
-<div>Luck: <strong>{{.Stats.Luck}}</strong></div>
-<div>Health: <strong>{{.Stats.Health}}</strong></div>
-</div>
-
+<div class="stats-update" data-strength="{{.Stats.Strength}}" data-luck="{{.Stats.Luck}}" data-health="{{.Stats.Health}}" style="display: none;"></div>
 
 <div class="actions">
 <button class="btn"
 hx-post="/reroll"
 hx-target="#game"
-hx-swap="outerHTML">
+hx-swap="innerHTML">
 Reroll Stats
 </button>
-
 
 <button class="btn primary"
 hx-post="/begin"
 hx-target="#game"
-hx-swap="outerHTML">
+hx-swap="innerHTML">
 Begin Adventure
 </button>
 </div>
