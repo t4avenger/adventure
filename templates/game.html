@@ -1,0 +1,33 @@
+{{define "game.html"}}
+  {{if .Message}}<p class="msg">{{.Message}}</p>{{end}}
+
+  {{if .LastRoll}}
+    <p class="roll">Roll: <strong>{{.LastRoll}}</strong> ({{.LastOutcome}})</p>
+  {{end}}
+
+  <p class="text">{{.Node.Text}}</p>
+
+  {{if .Node.Ending}}
+    <p class="end">— The End —</p>
+    <button class="btn"
+      hx-get="/"
+      hx-target="#game"
+      hx-swap="outerHTML">
+      Restart
+    </button>
+  {{else}}
+    <ul class="choices">
+      {{range .Node.Choices}}
+        <li>
+          <button class="btn"
+            hx-post="/play"
+            hx-target="#game"
+            hx-swap="innerHTML"
+            hx-vals='{"choice":"{{.Key}}"}'>
+            {{.Text}}
+          </button>
+        </li>
+      {{end}}
+    </ul>
+  {{end}}
+{{end}}

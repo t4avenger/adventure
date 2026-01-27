@@ -1,0 +1,49 @@
+start: "camp"
+
+nodes:
+  camp:
+    text: "You wake at the edge of a quiet camp. The woods watch you."
+    choices:
+      - key: "north"
+        text: "Head north into the trees"
+        next: "forest"
+      - key: "rest"
+        text: "Rest a moment (+1 Health, max 12)"
+        effects:
+          - op: "add"
+            stat: "health"
+            value: 1
+            clampMax: 12
+        next: "camp"
+
+  forest:
+    text: "The forest is cold and still. A shadow moves."
+    choices:
+      - key: "sneak"
+        text: "Try to sneak past (2d6 <= Luck)"
+        check:
+          stat: "luck"
+          roll: "2d6"
+          target: "stat"   # compare roll <= stat value
+        onSuccessNext: "clearing"
+        onFailureNext: "ambush"
+      - key: "charge"
+        text: "Charge through (2d6 <= Strength)"
+        check:
+          stat: "strength"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "clearing"
+        onFailureNext: "ambush"
+
+  clearing:
+    text: "You reach a moonlit clearing. For now, you're safe. (END)"
+    ending: true
+
+  ambush:
+    text: "A creature lunges from the dark! You take 2 damage. (END)"
+    effects:
+      - op: "add"
+        stat: "health"
+        value: -2
+    ending: true

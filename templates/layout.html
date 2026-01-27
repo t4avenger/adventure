@@ -1,0 +1,29 @@
+{{define "layout.html"}}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>adventure</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="bar">
+      <div>Strength: {{.State.Stats.Strength}}</div>
+      <div>Luck: {{.State.Stats.Luck}}</div>
+      <div>Health: {{.State.Stats.Health}}</div>
+    </header>
+
+    <section id="game">
+    {{if .Start}}
+        {{template "start.html" .Start}}
+    {{else}}
+        {{template "game.html" .}}
+    {{end}}
+    </section>
+  </main>
+</body>
+</html>
+{{end}}
