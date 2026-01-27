@@ -1,33 +1,47 @@
 {{define "game.html"}}
   <div class="stats-update" data-strength="{{.State.Stats.Strength}}" data-luck="{{.State.Stats.Luck}}" data-health="{{.State.Stats.Health}}" style="display: none;"></div>
 
-  {{if .Message}}<p class="msg">{{.Message}}</p>{{end}}
+  <div class="story-area">
+    <div class="story-content">
+      {{if .Message}}<p class="msg">{{.Message}}</p>{{end}}
 
-  {{if .LastRoll}}
-    <p class="roll">Roll: <strong>{{.LastRoll}}</strong> ({{.LastOutcome}})</p>
-  {{end}}
+      {{if .LastRoll}}
+        <p class="roll">Roll: <strong>{{.LastRoll}}</strong> ({{.LastOutcome}})</p>
+      {{end}}
 
-  <p class="text">{{.Node.Text}}</p>
+      <p class="text">{{.Node.Text}}</p>
+
+      {{if .Node.Ending}}
+        <p class="end">— The End —</p>
+      {{end}}
+
+      <!-- Placeholder for future images/animations -->
+      <div class="story-media"></div>
+    </div>
+  </div>
 
   {{if .Node.Ending}}
-    <p class="end">— The End —</p>
-    <button class="btn"
-      onclick="window.location.href='/start'">
-      Restart
-    </button>
+    <div class="choices-area">
+      <button class="btn"
+        onclick="window.location.href='/start'">
+        Restart
+      </button>
+    </div>
   {{else}}
-    <ul class="choices">
-      {{range .Node.Choices}}
-        <li>
-          <button class="btn"
-            hx-post="/play"
-            hx-target="#game"
-            hx-swap="innerHTML"
-            hx-vals='{"choice":"{{.Key}}"}'>
-            {{.Text}}
-          </button>
-        </li>
-      {{end}}
-    </ul>
+    <div class="choices-area">
+      <ul class="choices">
+        {{range .Node.Choices}}
+          <li>
+            <button class="btn"
+              hx-post="/play"
+              hx-target="#game"
+              hx-swap="innerHTML"
+              hx-vals='{"choice":"{{.Key}}"}'>
+              {{.Text}}
+            </button>
+          </li>
+        {{end}}
+      </ul>
+    </div>
   {{end}}
 {{end}}
