@@ -1,4 +1,6 @@
 {{define "game.html"}}
+  <div class="stats-update" data-strength="{{.State.Stats.Strength}}" data-luck="{{.State.Stats.Luck}}" data-health="{{.State.Stats.Health}}" style="display: none;"></div>
+
   {{if .Message}}<p class="msg">{{.Message}}</p>{{end}}
 
   {{if .LastRoll}}
@@ -10,9 +12,7 @@
   {{if .Node.Ending}}
     <p class="end">— The End —</p>
     <button class="btn"
-      hx-get="/"
-      hx-target="#game"
-      hx-swap="outerHTML">
+      onclick="window.location.href='/start'">
       Restart
     </button>
   {{else}}

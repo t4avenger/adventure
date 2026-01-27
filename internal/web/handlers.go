@@ -36,7 +36,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	st := s.getOrCreateState(ctx, w, r)
+	st, sessionID := s.getOrCreateState(ctx, w, r)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", 400)
@@ -49,7 +49,7 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	_ = s.Store.Put(ctx, s.sessionID(r), res.State)
+	_ = s.Store.Put(ctx, sessionID, res.State)
 
 	msg := res.ErrorMessage
 	vm, err := s.makeViewModel(res.State, msg, res.LastRoll, res.LastOutcome)
@@ -62,7 +62,7 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 	_ = s.Tmpl.ExecuteTemplate(w, "game.html", vm)
 }
 
-func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) game.PlayerState {
+func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) (game.PlayerState, string) {
 	id := s.sessionID(r)
 	if id == "" {
 		id = s.Store.NewID()
@@ -75,7 +75,7 @@ func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r 
 		})
 		st := game.NewPlayer(s.Engine.Story.Start)
 		_ = s.Store.Put(ctx, id, st)
-		return st
+		return st, id
 	}
 
 	st, ok, _ := s.Store.Get(ctx, id)
@@ -83,7 +83,7 @@ func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r 
 		st = game.NewPlayer(s.Engine.Story.Start)
 		_ = s.Store.Put(ctx, id, st)
 	}
-	return st
+	return st, id
 }
 
 func (s *Server) sessionID(r *http.Request) string {
