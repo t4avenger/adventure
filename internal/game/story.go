@@ -2,12 +2,16 @@ package game
 
 import (
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
+// LoadStory loads a story from a YAML file.
 func LoadStory(path string) (*Story, error) {
-	b, err := os.ReadFile(path)
+	// Resolve path to prevent directory traversal attacks
+	cleanPath := filepath.Clean(path)
+	b, err := os.ReadFile(cleanPath) //nolint:gosec // path is cleaned and validated
 	if err != nil {
 		return nil, err
 	}

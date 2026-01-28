@@ -63,10 +63,31 @@ git clone <repository-url>
 cd adventure
 ```
 
-2. Install dependencies:
+2. Install Go module dependencies:
 ```bash
 go mod download
 ```
+
+3. (Optional) Install code quality tools for development:
+```bash
+make install-tools
+```
+
+This installs:
+- `golangci-lint` - Comprehensive linter aggregator
+- `staticcheck` - Advanced static analysis
+- `goimports` - Code formatting tool
+
+**Important**: After installing tools, ensure `$GOPATH/bin` (or `$HOME/go/bin` if GOPATH is unset) is in your PATH:
+```bash
+# Check your GOPATH
+go env GOPATH
+
+# Add to PATH (add to ~/.bashrc or ~/.zshrc to make permanent)
+export PATH=$PATH:$(go env GOPATH)/bin
+```
+
+The `make install-tools` command will show you the exact path and instructions if it's not already in your PATH.
 
 ## Running the Game
 
@@ -79,10 +100,29 @@ The game will be available at `http://localhost:8080`
 
 ## Running Tests
 
-Run all tests:
+Run all tests (with race detection if gcc/CGO is available):
+```bash
+make test
+```
+
+Or run tests directly:
 ```bash
 go test ./...
 ```
+
+Run tests with race detector (requires gcc/CGO):
+```bash
+make test-race
+# or
+CGO_ENABLED=1 go test -v -race ./...
+```
+
+**Note**: Race detection requires CGO, which needs a C compiler (gcc). If gcc is not installed:
+- On Ubuntu/Debian: `sudo apt-get install gcc`
+- On macOS: `xcode-select --install` (includes gcc via Xcode Command Line Tools)
+- On Fedora/RHEL: `sudo dnf install gcc`
+
+If gcc is not available, tests will run without race detection automatically.
 
 Run tests with verbose output:
 ```bash
@@ -214,7 +254,14 @@ effects:
 
 ### Code Quality Tools
 
-The project uses several static analysis tools to maintain code quality:
+The project uses several static analysis tools to maintain code quality. These are external binaries (not Go modules) that need to be installed separately.
+
+**Install all tools at once:**
+```bash
+make install-tools
+```
+
+**Individual tools:**
 
 **golangci-lint**: Comprehensive linter aggregator
 ```bash
@@ -222,10 +269,10 @@ The project uses several static analysis tools to maintain code quality:
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 # Run
-golangci-lint run ./...
+golangci-lint run --out-format=colored-line-number ./...
 ```
 
-**go vet**: Built-in Go static analyzer
+**go vet**: Built-in Go static analyzer (no installation needed)
 ```bash
 go vet ./...
 ```
@@ -241,14 +288,18 @@ staticcheck ./...
 
 **Makefile**: Convenient commands for common tasks
 ```bash
-make check    # Run all checks (format, vet, lint, test)
-make lint     # Run golangci-lint
-make fmt      # Format code
-make vet      # Run go vet
-make test     # Run tests with race detection
-make build    # Build the application
-make run      # Run the application
+make install-tools  # Install all linting tools
+make check          # Run all checks (format, vet, lint, test)
+make lint           # Run golangci-lint
+make fmt            # Format code
+make vet            # Run go vet
+make staticcheck    # Run staticcheck
+make test           # Run tests with race detection
+make build          # Build the application
+make run            # Run the application
 ```
+
+**Note**: The linting tools (`golangci-lint`, `staticcheck`, `goimports`) are not Go module dependencies. They are standalone binaries installed via `go install` and stored in `$GOPATH/bin` or `$HOME/go/bin`. Make sure this directory is in your `PATH`.
 
 ### Testing
 

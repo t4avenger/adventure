@@ -9,7 +9,8 @@ func TestMemoryStore_GetPut(t *testing.T) {
 	store := NewMemoryStore[string]()
 
 	ctx := context.Background()
-	id := "test-id"
+	const testID = "test-id"
+	id := testID
 	value := "test-value"
 
 	// Test Put
@@ -44,7 +45,8 @@ func TestMemoryStore_Overwrite(t *testing.T) {
 	store := NewMemoryStore[int]()
 
 	ctx := context.Background()
-	id := "test-id"
+	const testID = "test-id"
+	id := testID
 
 	// Put initial value
 	err := store.Put(ctx, id, 10)

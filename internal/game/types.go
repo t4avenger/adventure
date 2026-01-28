@@ -1,11 +1,14 @@
 package game
 
+// Stats represents a character's core attributes.
 type Stats struct {
 	Strength int
 	Luck     int
 	Health   int
 }
 
+// PlayerState tracks the current game state for a player, including
+// their location, stats, flags, and any active enemy in combat.
 type PlayerState struct {
 	NodeID        string
 	Stats         Stats
@@ -15,11 +18,13 @@ type PlayerState struct {
 	EnemyHealth   int
 }
 
+// Story represents a complete adventure story with nodes and choices.
 type Story struct {
 	Start string           `yaml:"start"`
 	Nodes map[string]*Node `yaml:"nodes"`
 }
 
+// Node represents a single location or scene in the adventure.
 type Node struct {
 	Text    string   `yaml:"text"`
 	Choices []Choice `yaml:"choices"`
@@ -27,6 +32,7 @@ type Node struct {
 	Ending  bool     `yaml:"ending"`
 }
 
+// Choice represents a player action available at a node.
 type Choice struct {
 	Key           string   `yaml:"key"`
 	Text          string   `yaml:"text"`
@@ -39,12 +45,14 @@ type Choice struct {
 	Battle        *Battle  `yaml:"battle"`
 }
 
+// Check defines a stat check that must be passed to proceed.
 type Check struct {
 	Stat   string `yaml:"stat"`   // "strength" | "luck"
 	Roll   string `yaml:"roll"`   // "2d6"
 	Target string `yaml:"target"` // "stat" (roll <= stat)
 }
 
+// Effect modifies player stats when applied.
 type Effect struct {
 	Op       string `yaml:"op"`   // "add"
 	Stat     string `yaml:"stat"` // "health" | "strength" | "luck"

@@ -24,6 +24,11 @@ profile.cov
 go.work
 go.work.sum
 
+# Build artifacts
+bin/
+*.out
+coverage.*
+
 # env file
 .env
 

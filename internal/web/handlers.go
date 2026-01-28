@@ -1,3 +1,4 @@
+// Package web provides HTTP handlers for the adventure game web interface.
 package web
 
 import (
@@ -9,6 +10,7 @@ import (
 	"adventure/internal/session"
 )
 
+// Server handles HTTP requests for the adventure game.
 type Server struct {
 	Engine *game.Engine
 	Store  session.Store[game.PlayerState]
@@ -17,6 +19,7 @@ type Server struct {
 
 const cookieName = "adventure_sid"
 
+// Routes returns an HTTP handler with all registered routes.
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleIndex)
@@ -44,25 +47,31 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 	}
 	choice := r.FormValue("choice")
 
-	res, err := s.Engine.ApplyChoice(st, choice)
+	res, err := s.Engine.ApplyChoice(&st, choice)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	_ = s.Store.Put(ctx, sessionID, res.State)
+	if err := s.Store.Put(ctx, sessionID, res.State); err != nil {
+		http.Error(w, "failed to save state", 500)
+		return
+	}
 
 	msg := res.ErrorMessage
-	vm, err := s.makeViewModel(res.State, msg, res.LastRoll, res.LastOutcome)
+	vm, err := s.makeViewModel(&res.State, msg, res.LastRoll, res.LastOutcome)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
 	// htmx: return fragment for #game only
-	_ = s.Tmpl.ExecuteTemplate(w, "game.html", vm)
+	if err := s.Tmpl.ExecuteTemplate(w, "game.html", vm); err != nil {
+		http.Error(w, "failed to render template", 500)
+		return
+	}
 }
 
-func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) (game.PlayerState, string) {
+func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) (state game.PlayerState, sessionID string) {
 	id := s.sessionID(r)
 	if id == "" {
 		id = s.Store.NewID()
@@ -73,17 +82,20 @@ func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r 
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 		})
-		st := game.NewPlayer(s.Engine.Story.Start)
-		_ = s.Store.Put(ctx, id, st)
-		return st, id
+		state = game.NewPlayer(s.Engine.Story.Start)
+		_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
+		return state, id
 	}
 
-	st, ok, _ := s.Store.Get(ctx, id)
-	if !ok {
-		st = game.NewPlayer(s.Engine.Story.Start)
-		_ = s.Store.Put(ctx, id, st)
+	var ok bool
+	var err error
+	state, ok, err = s.Store.Get(ctx, id)
+	if err != nil || !ok {
+		// Create new state on store error or missing session
+		state = game.NewPlayer(s.Engine.Story.Start)
+		_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
 	}
-	return st, id
+	return state, id
 }
 
 func (s *Server) sessionID(r *http.Request) string {
@@ -94,6 +106,7 @@ func (s *Server) sessionID(r *http.Request) string {
 	return c.Value
 }
 
+// ViewModel contains data for rendering a game view.
 type ViewModel struct {
 	Node        *game.Node
 	State       game.PlayerState
@@ -102,14 +115,14 @@ type ViewModel struct {
 	LastOutcome *string
 }
 
-func (s *Server) makeViewModel(st game.PlayerState, msg string, roll *int, outcome *string) (ViewModel, error) {
+func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outcome *string) (ViewModel, error) {
 	n, err := s.Engine.CurrentNode(st)
 	if err != nil {
 		return ViewModel{}, err
 	}
 	return ViewModel{
 		Node:        n,
-		State:       st,
+		State:       *st,
 		Message:     msg,
 		LastRoll:    roll,
 		LastOutcome: outcome,

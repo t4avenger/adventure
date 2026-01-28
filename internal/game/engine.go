@@ -1,3 +1,6 @@
+// Package game provides the core game engine for text-based adventure games.
+// It handles story loading, player state management, choice resolution,
+// stat checks, and combat mechanics.
 package game
 
 import (
@@ -9,6 +12,7 @@ import (
 const (
 	// MinStat and MaxStat bound Strength and Luck.
 	MinStat = 1
+	// MaxStat is the maximum value for Strength and Luck stats.
 	MaxStat = 12
 
 	// MinHealth is the lowest health a player can have; 0 means dead.
@@ -17,12 +21,40 @@ const (
 	// DeathNodeID is the special node the story can define to represent
 	// a generic death/game-over screen.
 	DeathNodeID = "death"
+
+	// OutcomeSuccess indicates a successful stat check roll.
+	OutcomeSuccess = "success"
+	// OutcomeFailure indicates a failed stat check roll.
+	OutcomeFailure = "failure"
+	// OutcomeVictory indicates the player won a battle.
+	OutcomeVictory = "victory"
+	// OutcomeDefeat indicates the player lost a battle.
+	OutcomeDefeat = "defeat"
+	// OutcomeTie indicates a battle round ended in a tie.
+	OutcomeTie = "tie"
+	// OutcomePlayerHit indicates the player hit the enemy in battle.
+	OutcomePlayerHit = "player_hit"
+	// OutcomeEnemyHit indicates the enemy hit the player in battle.
+	OutcomeEnemyHit = "enemy_hit"
+
+	// StatStrength is the stat name for strength.
+	StatStrength = "strength"
+	// StatLuck is the stat name for luck.
+	StatLuck = "luck"
+	// StatHealth is the stat name for health.
+	StatHealth = "health"
+
+	// OpAdd is the effect operation for adding to a stat.
+	OpAdd = "add"
 )
 
+// Engine manages game state and resolves player choices.
 type Engine struct {
 	Story *Story
 }
 
+// StepResult contains the result of applying a player choice, including
+// the updated state, any dice rolls, and outcome messages.
 type StepResult struct {
 	State        PlayerState
 	LastRoll     *int
@@ -30,6 +62,7 @@ type StepResult struct {
 	ErrorMessage string
 }
 
+// NewPlayer creates a new player state with default starting stats.
 func NewPlayer(start string) PlayerState {
 	return PlayerState{
 		NodeID: start,
@@ -42,7 +75,8 @@ func NewPlayer(start string) PlayerState {
 	}
 }
 
-func (e *Engine) CurrentNode(st PlayerState) (*Node, error) {
+// CurrentNode returns the node the player is currently on.
+func (e *Engine) CurrentNode(st *PlayerState) (*Node, error) {
 	n := e.Story.Nodes[st.NodeID]
 	if n == nil {
 		return nil, fmt.Errorf("unknown node: %s", st.NodeID)
@@ -50,7 +84,9 @@ func (e *Engine) CurrentNode(st PlayerState) (*Node, error) {
 	return n, nil
 }
 
-func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, error) {
+// ApplyChoice processes a player's choice, updating their state and
+// determining the next node in the story.
+func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, error) {
 	node, err := e.CurrentNode(st)
 	if err != nil {
 		return StepResult{}, err
@@ -65,11 +101,11 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 		}
 	}
 	if ch == nil {
-		return StepResult{State: st, ErrorMessage: "That choice doesn't exist."}, nil
+		return StepResult{State: *st, ErrorMessage: "That choice doesn't exist."}, nil
 	}
 
 	// Apply node-level effects first (optional; here we only do choice effects + destination effects)
-	st = applyEffects(st, ch.Effects)
+	applyEffects(st, ch.Effects)
 
 	var lastRoll *int
 	var lastOutcome *string
@@ -81,13 +117,15 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 
 		ok, err := checkRoll(st, *ch.Check, roll)
 		if err != nil {
-			return StepResult{State: st, ErrorMessage: err.Error()}, nil
+			return StepResult{State: *st, ErrorMessage: err.Error()}, nil
 		}
-		out := "failure"
+		var outcome string
 		if ok {
-			out = "success"
+			outcome = OutcomeSuccess
+		} else {
+			outcome = OutcomeFailure
 		}
-		lastOutcome = &out
+		lastOutcome = &outcome
 
 		if ok && ch.OnSuccessNext != "" {
 			next = ch.OnSuccessNext
@@ -122,19 +160,22 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 		}
 
 		var battleLastRoll *int
-		var outcome string
-		st, st.EnemyHealth, battleLastRoll, outcome = e.resolveBattleRound(st, *ch.Battle, st.EnemyHealth, playerDamage)
+		var battleOutcome string
+		var updatedSt *PlayerState
+		var newEnemyHealth int
+		updatedSt, newEnemyHealth, battleLastRoll, battleOutcome = e.resolveBattleRound(st, *ch.Battle, st.EnemyHealth, playerDamage)
+		*st = *updatedSt
+		st.EnemyHealth = newEnemyHealth
 
 		if battleLastRoll != nil {
 			lastRoll = battleLastRoll
 		}
-		if outcome != "" {
-			out := outcome
-			lastOutcome = &out
+		if battleOutcome != "" {
+			lastOutcome = &battleOutcome
 		}
 
-		switch outcome {
-		case "victory":
+		switch battleOutcome {
+		case OutcomeVictory:
 			// Clear enemy state when battle is won
 			st.EnemyHealth = 0
 			st.EnemyName = ""
@@ -142,7 +183,7 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 			if ch.Battle.OnVictoryNext != "" {
 				next = ch.Battle.OnVictoryNext
 			}
-		case "defeat":
+		case OutcomeDefeat:
 			// Clear enemy state when player dies
 			st.EnemyHealth = 0
 			st.EnemyName = ""
@@ -153,17 +194,15 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 			// round of choices.
 			next = st.NodeID
 		}
-	} else {
+	} else if st.EnemyHealth > 0 {
 		// If this choice doesn't have a battle, clear enemy state (e.g., running away)
-		if st.EnemyHealth > 0 {
-			st.EnemyHealth = 0
-			st.EnemyName = ""
-			st.EnemyStrength = 0
-		}
+		st.EnemyHealth = 0
+		st.EnemyName = ""
+		st.EnemyStrength = 0
 	}
 
 	if next == "" {
-		return StepResult{State: st, ErrorMessage: "No destination for that choice."}, nil
+		return StepResult{State: *st, ErrorMessage: "No destination for that choice."}, nil
 	}
 
 	oldNodeID := st.NodeID
@@ -175,7 +214,7 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 	if st.NodeID != oldNodeID {
 		dst := e.Story.Nodes[st.NodeID]
 		if dst != nil && len(dst.Effects) > 0 {
-			st = applyEffects(st, dst.Effects)
+			applyEffects(st, dst.Effects)
 		}
 	}
 
@@ -188,7 +227,7 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 		}
 	}
 
-	return StepResult{State: st, LastRoll: lastRoll, LastOutcome: lastOutcome}, nil
+	return StepResult{State: *st, LastRoll: lastRoll, LastOutcome: lastOutcome}, nil
 }
 
 // resolveBattleRound runs a single opposed-roll round between the player and
@@ -199,7 +238,7 @@ func (e *Engine) ApplyChoice(st PlayerState, choiceKey string) (StepResult, erro
 //   - "tie"        (no damage dealt)
 //   - "victory"    (enemy defeated)
 //   - "defeat"     (player reduced to 0 health)
-func (e *Engine) resolveBattleRound(st PlayerState, b Battle, enemyHealth int, playerDamage int) (PlayerState, int, *int, string) {
+func (e *Engine) resolveBattleRound(st *PlayerState, b Battle, enemyHealth, playerDamage int) (updatedState *PlayerState, newEnemyHealth int, rollResult *int, outcome string) {
 	if enemyHealth <= 0 {
 		enemyHealth = 1
 	}
@@ -210,33 +249,38 @@ func (e *Engine) resolveBattleRound(st PlayerState, b Battle, enemyHealth int, p
 	playerTotal := st.Stats.Strength + playerRoll
 	enemyTotal := b.EnemyStrength + enemyRoll
 
-	outcome := "tie"
+	outcome = OutcomeTie
+
+	// Create a copy to avoid mutating the input
+	result := *st
 
 	switch {
 	case playerTotal > enemyTotal:
 		enemyHealth -= playerDamage
 		if enemyHealth <= 0 {
 			enemyHealth = 0
-			outcome = "victory"
+			outcome = OutcomeVictory
 		} else {
-			outcome = "player_hit"
+			outcome = OutcomePlayerHit
 		}
 	case enemyTotal > playerTotal:
-		st.Stats.Health--
-		if st.Stats.Health <= MinHealth {
-			st.Stats.Health = MinHealth
-			outcome = "defeat"
+		result.Stats.Health--
+		if result.Stats.Health <= MinHealth {
+			result.Stats.Health = MinHealth
+			outcome = OutcomeDefeat
 		} else {
-			outcome = "enemy_hit"
+			outcome = OutcomeEnemyHit
 		}
-	default:
-		outcome = "tie"
+		// default case: outcome already set to OutcomeTie above
 	}
 
-	return st, enemyHealth, &playerRoll, outcome
+	updatedState = &result
+	newEnemyHealth = enemyHealth
+	rollResult = &playerRoll
+	return updatedState, newEnemyHealth, rollResult, outcome
 }
 
-func checkRoll(st PlayerState, c Check, roll int) (bool, error) {
+func checkRoll(st *PlayerState, c Check, roll int) (bool, error) {
 	if c.Roll != "2d6" || c.Target != "stat" {
 		return false, fmt.Errorf("unsupported check: roll=%s target=%s", c.Roll, c.Target)
 	}
@@ -244,13 +288,13 @@ func checkRoll(st PlayerState, c Check, roll int) (bool, error) {
 	return roll <= stat, nil
 }
 
-func getStat(st PlayerState, stat string) int {
+func getStat(st *PlayerState, stat string) int {
 	switch stat {
-	case "strength":
+	case StatStrength:
 		return st.Stats.Strength
-	case "luck":
+	case StatLuck:
 		return st.Stats.Luck
-	case "health":
+	case StatHealth:
 		return st.Stats.Health
 	default:
 		return 0
@@ -259,18 +303,18 @@ func getStat(st PlayerState, stat string) int {
 
 func setStat(st *PlayerState, stat string, v int) {
 	switch stat {
-	case "strength":
+	case StatStrength:
 		st.Stats.Strength = v
-	case "luck":
+	case StatLuck:
 		st.Stats.Luck = v
-	case "health":
+	case StatHealth:
 		st.Stats.Health = v
 	}
 }
 
-func applyEffects(st PlayerState, effs []Effect) PlayerState {
+func applyEffects(st *PlayerState, effs []Effect) {
 	for _, ef := range effs {
-		if ef.Op != "add" {
+		if ef.Op != OpAdd {
 			continue
 		}
 		cur := getStat(st, ef.Stat)
@@ -286,22 +330,21 @@ func applyEffects(st PlayerState, effs []Effect) PlayerState {
 		// Apply global bounds for stats regardless of story-provided
 		// clamps so that rules are always enforced.
 		switch ef.Stat {
-		case "strength", "luck":
+		case StatStrength, StatLuck:
 			if nv < MinStat {
 				nv = MinStat
 			}
 			if nv > MaxStat {
 				nv = MaxStat
 			}
-		case "health":
+		case StatHealth:
 			if nv < MinHealth {
 				nv = MinHealth
 			}
 		}
 
-		setStat(&st, ef.Stat, nv)
+		setStat(st, ef.Stat, nv)
 	}
-	return st
 }
 
 // crypto-rand small helper; plenty for a adventure
@@ -311,7 +354,12 @@ func roll2d6() int {
 
 func d6() int {
 	var b [8]byte
-	_, _ = rand.Read(b[:])
+	if _, err := rand.Read(b[:]); err != nil {
+		// Fallback to a simple pseudo-random if crypto/rand fails
+		// This should never happen in practice, but we handle it gracefully
+		return 1
+	}
 	n := binary.LittleEndian.Uint64(b[:])
-	return int(n%6) + 1
+	// n%6 is safe: result is 0-5, adding 1 gives 1-6
+	return int(n%6) + 1 //nolint:gosec // modulo 6 is safe, result fits in int
 }

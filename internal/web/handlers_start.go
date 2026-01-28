@@ -25,16 +25,22 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 	st := game.NewPlayer(s.Engine.Story.Start)
 	st.Stats = game.RollStats()
 
-	_ = s.Store.Put(ctx, id, st)
+	if err := s.Store.Put(ctx, id, st); err != nil {
+		http.Error(w, "failed to save state", 500)
+		return
+	}
 
 	vm := StartViewModel{
 		Stats: st.Stats,
 	}
 
 	// IMPORTANT: render layout, but tell it to use start.html
-	_ = s.Tmpl.ExecuteTemplate(w, "layout.html", map[string]any{
+	if err := s.Tmpl.ExecuteTemplate(w, "layout.html", map[string]any{
 		"Start": vm,
-	})
+	}); err != nil {
+		http.Error(w, "failed to render template", 500)
+		return
+	}
 }
 
 // POST /reroll
@@ -43,10 +49,16 @@ func (s *Server) handleReroll(w http.ResponseWriter, r *http.Request) {
 	st, sessionID := s.getOrCreateState(ctx, w, r)
 
 	st.Stats = game.RollStats()
-	_ = s.Store.Put(ctx, sessionID, st)
+	if err := s.Store.Put(ctx, sessionID, st); err != nil {
+		http.Error(w, "failed to save state", 500)
+		return
+	}
 
 	vm := StartViewModel{Stats: st.Stats}
-	_ = s.Tmpl.ExecuteTemplate(w, "start.html", vm)
+	if err := s.Tmpl.ExecuteTemplate(w, "start.html", vm); err != nil {
+		http.Error(w, "failed to render template", 500)
+		return
+	}
 }
 
 // POST /begin
@@ -55,13 +67,19 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 	st, sessionID := s.getOrCreateState(ctx, w, r)
 
 	st.NodeID = s.Engine.Story.Start
-	_ = s.Store.Put(ctx, sessionID, st)
+	if err := s.Store.Put(ctx, sessionID, st); err != nil {
+		http.Error(w, "failed to save state", 500)
+		return
+	}
 
-	vm, err := s.makeViewModel(st, "", nil, nil)
+	vm, err := s.makeViewModel(&st, "", nil, nil)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	_ = s.Tmpl.ExecuteTemplate(w, "game.html", vm)
+	if err := s.Tmpl.ExecuteTemplate(w, "game.html", vm); err != nil {
+		http.Error(w, "failed to render template", 500)
+		return
+	}
 }

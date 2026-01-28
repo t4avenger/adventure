@@ -45,7 +45,7 @@ func TestCurrentNode(t *testing.T) {
 	engine := &Engine{Story: story}
 	player := NewPlayer("node1")
 
-	node, err := engine.CurrentNode(player)
+	node, err := engine.CurrentNode(&player)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestCurrentNode(t *testing.T) {
 
 	// Test unknown node
 	player.NodeID = "unknown"
-	_, err = engine.CurrentNode(player)
+	_, err = engine.CurrentNode(&player)
 	if err == nil {
 		t.Error("Expected error for unknown node")
 	}
@@ -85,7 +85,7 @@ func TestApplyChoice_Simple(t *testing.T) {
 	engine := &Engine{Story: story}
 	player := NewPlayer("start")
 
-	result, err := engine.ApplyChoice(player, "next")
+	result, err := engine.ApplyChoice(&player, "next")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestApplyChoice_WithEffects(t *testing.T) {
 	player := NewPlayer("start")
 	player.Stats.Health = 10
 
-	result, err := engine.ApplyChoice(player, "heal")
+	result, err := engine.ApplyChoice(&player, "heal")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestApplyChoice_WithCheck(t *testing.T) {
 	player := NewPlayer("start")
 	player.Stats.Luck = 12 // High luck, should usually succeed
 
-	result, err := engine.ApplyChoice(player, "try")
+	result, err := engine.ApplyChoice(&player, "try")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestApplyChoice_InvalidChoice(t *testing.T) {
 	engine := &Engine{Story: story}
 	player := NewPlayer("start")
 
-	result, err := engine.ApplyChoice(player, "invalid")
+	result, err := engine.ApplyChoice(&player, "invalid")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestApplyChoice_DestinationEffects(t *testing.T) {
 	player := NewPlayer("start")
 	player.Stats.Health = 10
 
-	result, err := engine.ApplyChoice(player, "next")
+	result, err := engine.ApplyChoice(&player, "next")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -270,20 +270,20 @@ func TestGetStat(t *testing.T) {
 	player.Stats.Luck = 8
 	player.Stats.Health = 15
 
-	if getStat(player, "strength") != 10 {
-		t.Errorf("Expected Strength 10, got %d", getStat(player, "strength"))
+	if getStat(&player, "strength") != 10 {
+		t.Errorf("Expected Strength 10, got %d", getStat(&player, "strength"))
 	}
 
-	if getStat(player, "luck") != 8 {
-		t.Errorf("Expected Luck 8, got %d", getStat(player, "luck"))
+	if getStat(&player, "luck") != 8 {
+		t.Errorf("Expected Luck 8, got %d", getStat(&player, "luck"))
 	}
 
-	if getStat(player, "health") != 15 {
-		t.Errorf("Expected Health 15, got %d", getStat(player, "health"))
+	if getStat(&player, "health") != 15 {
+		t.Errorf("Expected Health 15, got %d", getStat(&player, "health"))
 	}
 
-	if getStat(player, "unknown") != 0 {
-		t.Errorf("Expected 0 for unknown stat, got %d", getStat(player, "unknown"))
+	if getStat(&player, "unknown") != 0 {
+		t.Errorf("Expected 0 for unknown stat, got %d", getStat(&player, "unknown"))
 	}
 }
 
@@ -327,10 +327,10 @@ func TestApplyEffects(t *testing.T) {
 		},
 	}
 
-	result := applyEffects(player, effects)
+	applyEffects(&player, effects)
 
-	if result.Stats.Health != 1 {
-		t.Errorf("Expected Health 1 (clamped), got %d", result.Stats.Health)
+	if player.Stats.Health != 1 {
+		t.Errorf("Expected Health 1 (clamped), got %d", player.Stats.Health)
 	}
 }
 
@@ -346,7 +346,7 @@ func TestCheckRoll(t *testing.T) {
 	}
 
 	// Roll of 5 should succeed (5 <= 10)
-	ok, err := checkRoll(player, check, 5)
+	ok, err := checkRoll(&player, check, 5)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -355,7 +355,7 @@ func TestCheckRoll(t *testing.T) {
 	}
 
 	// Roll of 12 should fail (12 > 10)
-	ok, err = checkRoll(player, check, 12)
+	ok, err = checkRoll(&player, check, 12)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -369,7 +369,7 @@ func TestCheckRoll(t *testing.T) {
 		Roll:   "1d6",
 		Target: "stat",
 	}
-	_, err = checkRoll(player, invalidCheck, 5)
+	_, err = checkRoll(&player, invalidCheck, 5)
 	if err == nil {
 		t.Error("Expected error for unsupported roll type")
 	}
@@ -393,13 +393,13 @@ func TestApplyEffects_ClampStrengthAndLuckBounds(t *testing.T) {
 		},
 	}
 
-	result := applyEffects(player, effects)
+	applyEffects(&player, effects)
 
-	if result.Stats.Strength != MaxStat {
-		t.Errorf("Expected Strength clamped to %d, got %d", MaxStat, result.Stats.Strength)
+	if player.Stats.Strength != MaxStat {
+		t.Errorf("Expected Strength clamped to %d, got %d", MaxStat, player.Stats.Strength)
 	}
-	if result.Stats.Luck != MinStat {
-		t.Errorf("Expected Luck clamped to %d, got %d", MinStat, result.Stats.Luck)
+	if player.Stats.Luck != MinStat {
+		t.Errorf("Expected Luck clamped to %d, got %d", MinStat, player.Stats.Luck)
 	}
 }
 
@@ -438,7 +438,7 @@ func TestHealthGameOverRoutesToDeathNode(t *testing.T) {
 	player := NewPlayer("start")
 	player.Stats.Health = 3
 
-	result, err := engine.ApplyChoice(player, "next")
+	result, err := engine.ApplyChoice(&player, "next")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -467,7 +467,7 @@ func TestResolveBattleRound_HealthNeverNegative(t *testing.T) {
 		OnDefeatNext:  "defeat",
 	}
 
-	result, enemyHealth, _, outcome := engine.resolveBattleRound(player, battle, battle.EnemyHealth, 1)
+	result, enemyHealth, _, outcome := engine.resolveBattleRound(&player, battle, battle.EnemyHealth, 1)
 
 	if result.Stats.Health < MinHealth {
 		t.Errorf("Expected health never below %d, got %d", MinHealth, result.Stats.Health)
@@ -475,12 +475,13 @@ func TestResolveBattleRound_HealthNeverNegative(t *testing.T) {
 	if enemyHealth < 0 {
 		t.Errorf("Expected enemy health never below 0, got %d", enemyHealth)
 	}
-	if outcome != "victory" && outcome != "defeat" && outcome != "player_hit" && outcome != "enemy_hit" && outcome != "tie" {
+	if outcome != OutcomeVictory && outcome != OutcomeDefeat && outcome != OutcomePlayerHit && outcome != OutcomeEnemyHit && outcome != OutcomeTie {
 		t.Errorf("Unexpected outcome %q", outcome)
 	}
 }
 
 func TestApplyChoice_BattleInitializesEnemyState(t *testing.T) {
+	const testEnemyName = "Goblin"
 	story := &Story{
 		Start: "battle",
 		Nodes: map[string]*Node{
@@ -492,7 +493,7 @@ func TestApplyChoice_BattleInitializesEnemyState(t *testing.T) {
 						Text: "Attack",
 						Mode: "battle_attack",
 						Battle: &Battle{
-							EnemyName:     "Goblin",
+							EnemyName:     testEnemyName,
 							EnemyStrength: 8,
 							EnemyHealth:   3,
 							OnVictoryNext: "victory",
@@ -512,14 +513,14 @@ func TestApplyChoice_BattleInitializesEnemyState(t *testing.T) {
 	player.Stats.Strength = 10
 	player.Stats.Health = 12
 
-	result, err := engine.ApplyChoice(player, "attack")
+	result, err := engine.ApplyChoice(&player, "attack")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	// Enemy state should be initialized
-	if result.State.EnemyName != "Goblin" {
-		t.Errorf("Expected EnemyName 'Goblin', got '%s'", result.State.EnemyName)
+	if result.State.EnemyName != testEnemyName {
+		t.Errorf("Expected EnemyName '%s', got '%s'", testEnemyName, result.State.EnemyName)
 	}
 	if result.State.EnemyStrength != 8 {
 		t.Errorf("Expected EnemyStrength 8, got %d", result.State.EnemyStrength)
@@ -567,7 +568,7 @@ func TestApplyChoice_BattleClearsEnemyStateOnVictory(t *testing.T) {
 
 	// Run multiple rounds until victory (may take a few tries)
 	for i := 0; i < 10; i++ {
-		result, err := engine.ApplyChoice(player, "attack")
+		result, err := engine.ApplyChoice(&player, "attack")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -592,6 +593,7 @@ func TestApplyChoice_BattleClearsEnemyStateOnVictory(t *testing.T) {
 }
 
 func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
+	const testEnemyName = "Goblin"
 	story := &Story{
 		Start: "battle",
 		Nodes: map[string]*Node{
@@ -603,7 +605,7 @@ func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
 						Text: "Attack",
 						Mode: "battle_attack",
 						Battle: &Battle{
-							EnemyName:     "Goblin",
+							EnemyName:     testEnemyName,
 							EnemyStrength: 8,
 							EnemyHealth:   3,
 						},
@@ -623,11 +625,11 @@ func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
 
 	engine := &Engine{Story: story}
 	player := NewPlayer("battle")
-	player.EnemyName = "Goblin"
+	player.EnemyName = testEnemyName
 	player.EnemyStrength = 8
 	player.EnemyHealth = 2
 
-	result, err := engine.ApplyChoice(player, "run")
+	result, err := engine.ApplyChoice(&player, "run")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -675,7 +677,7 @@ func TestApplyChoice_LuckAttackReducesLuck(t *testing.T) {
 	player.Stats.Strength = 10
 	player.Stats.Health = 12
 
-	result, err := engine.ApplyChoice(player, "luck")
+	result, err := engine.ApplyChoice(&player, "luck")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -687,7 +689,7 @@ func TestApplyChoice_LuckAttackReducesLuck(t *testing.T) {
 
 	// Test that luck doesn't go below 1
 	player.Stats.Luck = 1
-	result, err = engine.ApplyChoice(player, "luck")
+	result, err = engine.ApplyChoice(&player, "luck")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
