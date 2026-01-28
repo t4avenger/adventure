@@ -7,6 +7,16 @@ nodes:
       - key: "north"
         text: "Head north into the trees"
         next: "forest"
+      - key: "train"
+        text: "Practice your skills (+1 Strength, +1 Luck, clamped 1-12)"
+        effects:
+          - op: "add"
+            stat: "strength"
+            value: 1
+          - op: "add"
+            stat: "luck"
+            value: 1
+        next: "camp"
       - key: "rest"
         text: "Rest a moment (+1 Health, max 12)"
         effects:
@@ -35,6 +45,9 @@ nodes:
           target: "stat"
         onSuccessNext: "clearing"
         onFailureNext: "ambush"
+      - key: "road"
+        text: "Take the road towards the hills"
+        next: "road"
 
   clearing:
     text: "You reach a moonlit clearing. For now, you're safe. (END)"
@@ -46,4 +59,49 @@ nodes:
       - op: "add"
         stat: "health"
         value: -2
+    ending: true
+
+  road:
+    text: "On the road, a goblin blocks your path, snarling as it draws a rusty blade."
+    choices:
+      - key: "fight"
+        text: "Attack the goblin (Strength + 2d6)"
+        mode: "battle_attack"
+        battle:
+          enemyName: "Goblin"
+          enemyStrength: 8
+          enemyHealth: 3
+          onVictoryNext: "goblin_victory"
+          onDefeatNext: "goblin_defeat"
+      - key: "luck"
+        text: "Press your luck for a stronger blow"
+        mode: "battle_luck"
+        battle:
+          enemyName: "Goblin"
+          enemyStrength: 8
+          enemyHealth: 3
+          onVictoryNext: "goblin_victory"
+          onDefeatNext: "goblin_defeat"
+      - key: "run"
+        text: "Run back into the trees"
+        next: "forest"
+
+  goblin_victory:
+    text: "You cut the goblin down. The road is clear, and you feel a little luckier."
+    effects:
+      - op: "add"
+        stat: "luck"
+        value: 1
+    ending: true
+
+  goblin_defeat:
+    text: "Blows rain down until the world fades. You stagger away, badly hurt."
+    effects:
+      - op: "add"
+        stat: "health"
+        value: -3
+    ending: true
+
+  death:
+    text: "Your wounds are too great. Darkness closes in and your adventure ends here."
     ending: true

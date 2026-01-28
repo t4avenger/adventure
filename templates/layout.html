@@ -25,11 +25,60 @@
       }
     }
     
+    // Global function to update enemy sidebar
+    function updateEnemySidebar() {
+      const enemyEl = document.querySelector('#game .enemy-update') || document.querySelector('.enemy-update');
+      const enemySidebar = document.querySelector('.enemy-sidebar');
+      
+      if (!enemySidebar) return;
+      
+      // Always hide by default
+      enemySidebar.style.display = 'none';
+      
+      if (enemyEl) {
+        const enemyName = enemyEl.getAttribute('data-enemy-name') || '';
+        const enemyStrength = enemyEl.getAttribute('data-enemy-strength') || '0';
+        const enemyHealth = enemyEl.getAttribute('data-enemy-health') || '0';
+        
+        // Parse health - handle both string and number
+        const health = parseInt(enemyHealth, 10);
+        const name = (enemyName || '').trim();
+        
+        // Only show enemy sidebar if enemy health > 0 and enemy name exists and is not empty
+        if (!isNaN(health) && health > 0 && name !== '') {
+          enemySidebar.classList.add('show');
+          enemySidebar.style.display = 'flex';
+          
+          const nameEl = enemySidebar.querySelector('.enemy-stats div:first-child strong');
+          const strengthEl = enemySidebar.querySelector('.enemy-stats div:nth-child(2) strong');
+          const healthEl = enemySidebar.querySelector('.enemy-stats div:nth-child(3) strong');
+          
+          if (nameEl) nameEl.textContent = name;
+          if (strengthEl) {
+            const str = parseInt(enemyStrength, 10) || 0;
+            strengthEl.textContent = str.toString();
+          }
+          if (healthEl) {
+            healthEl.textContent = health.toString();
+          }
+        } else {
+          enemySidebar.classList.remove('show');
+        }
+      }
+    }
+    
     // Set up event listeners
     function initStatsUpdater() {
       updateSidebarStats();
+      updateEnemySidebar();
       // Update after HTMX swaps
-      document.body.addEventListener('htmx:afterSwap', updateSidebarStats);
+      document.body.addEventListener('htmx:afterSwap', function(evt) {
+        // Small delay to ensure DOM is updated
+        setTimeout(function() {
+          updateSidebarStats();
+          updateEnemySidebar();
+        }, 10);
+      });
     }
     
     // Update on initial load (works whether DOM is ready or not)
@@ -40,7 +89,10 @@
     }
     
     // Also update after a short delay to catch any late-loading content
-    setTimeout(updateSidebarStats, 100);
+    setTimeout(function() {
+      updateSidebarStats();
+      updateEnemySidebar();
+    }, 100);
   </script>
 </head>
 <body>
@@ -64,6 +116,17 @@
             {{template "game.html" .}}
         {{end}}
       </section>
+
+      <aside class="enemy-sidebar" style="display: none;">
+        <div class="enemy-image">
+          <div class="enemy-placeholder">Enemy</div>
+        </div>
+        <div class="enemy-stats">
+          <div>Name: <strong></strong></div>
+          <div>Strength: <strong></strong></div>
+          <div>Health: <strong></strong></div>
+        </div>
+      </aside>
     </div>
   </main>
 </body>
