@@ -1,5 +1,6 @@
 package game
 
+// RollStats generates random starting stats for a new character.
 func RollStats() Stats {
 	return Stats{
 		Strength: roll2d6(),

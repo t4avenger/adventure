@@ -16,7 +16,7 @@ html, body {
 }
 .container { 
   display: grid !important;
-  grid-template-columns: 200px 1fr !important;
+  grid-template-columns: 200px 1fr 200px !important;
   gap: 24px !important;
   align-items: start;
   width: 100%;
@@ -62,6 +62,42 @@ html, body {
   flex-direction: column;
   min-height: calc(100vh - 32px);
 }
+.enemy-sidebar {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+  width: 200px;
+  grid-column: 3;
+}
+.enemy-sidebar.show {
+  display: flex !important;
+}
+.enemy-image { display: flex; justify-content: center; width: 100%; }
+.enemy-placeholder {
+  width: 150px;
+  height: 150px;
+  background: #1b1b1b;
+  border: 2px solid #333;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+.enemy-stats {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px;
+  padding: 12px;
+  background: #1b1b1b;
+  border-radius: 12px;
+  width: 100%;
+}
+.enemy-stats div { font-size: 0.95rem; }
+.enemy-stats strong { color: #ffcc66; font-weight: 600; }
 .story-area {
   flex: 1;
   display: flex;
@@ -79,6 +115,18 @@ html, body {
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
+}
+.battle-status {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #141414;
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+  text-align: left;
+  width: 100%;
+  max-width: 600px;
 }
 .story-media {
   min-height: 200px;
@@ -153,13 +201,20 @@ html, body {
 @media (max-width: 768px) {
   .container { 
     grid-template-columns: 1fr !important; 
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto 1fr auto;
   }
   .sidebar { 
     width: 100%; 
     grid-column: 1;
     position: relative;
     top: 0;
+  }
+  .enemy-sidebar {
+    width: 100%;
+    grid-column: 1;
+    position: relative;
+    top: 0;
+    margin-top: 16px;
   }
   .main-content {
     grid-column: 1;

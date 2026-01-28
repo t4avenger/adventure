@@ -24,7 +24,7 @@ nodes:
     ending: true
 `
 
-	err := os.WriteFile(storyPath, []byte(storyYAML), 0644)
+	err := os.WriteFile(storyPath, []byte(storyYAML), 0o600) //nolint:gosec // test file permissions are acceptable
 	if err != nil {
 		t.Fatalf("Failed to create test story file: %v", err)
 	}
@@ -87,7 +87,7 @@ nodes:
     invalid: [unclosed bracket
 `
 
-	err := os.WriteFile(storyPath, []byte(invalidYAML), 0644)
+	err := os.WriteFile(storyPath, []byte(invalidYAML), 0o600) //nolint:gosec // test file permissions are acceptable
 	if err != nil {
 		t.Fatalf("Failed to create test story file: %v", err)
 	}
@@ -117,7 +117,7 @@ nodes:
             clampMax: 12
 `
 
-	err := os.WriteFile(storyPath, []byte(storyYAML), 0644)
+	err := os.WriteFile(storyPath, []byte(storyYAML), 0o600) //nolint:gosec // test file permissions are acceptable
 	if err != nil {
 		t.Fatalf("Failed to create test story file: %v", err)
 	}
