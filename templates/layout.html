@@ -25,45 +25,48 @@
       }
     }
     
-    // Global function to update enemy sidebar
+    // Global function to update enemy sidebar (1-3 panels or 1 horde)
     function updateEnemySidebar() {
-      const enemyEl = document.querySelector('#game .enemy-update') || document.querySelector('.enemy-update');
+      const gameEl = document.querySelector('#game');
+      const enemyUpdates = gameEl ? gameEl.querySelectorAll('.enemy-update') : document.querySelectorAll('.enemy-update');
       const enemySidebar = document.querySelector('.enemy-sidebar');
       
       if (!enemySidebar) return;
       
-      // Always hide by default
       enemySidebar.style.display = 'none';
+      const panels = enemySidebar.querySelectorAll('.enemy-panel');
+      panels.forEach(function(p) { p.style.display = 'none'; });
       
-      if (enemyEl) {
-        const enemyName = enemyEl.getAttribute('data-enemy-name') || '';
-        const enemyStrength = enemyEl.getAttribute('data-enemy-strength') || '0';
-        const enemyHealth = enemyEl.getAttribute('data-enemy-health') || '0';
-        
-        // Parse health - handle both string and number
-        const health = parseInt(enemyHealth, 10);
-        const name = (enemyName || '').trim();
-        
-        // Only show enemy sidebar if enemy health > 0 and enemy name exists and is not empty
-        if (!isNaN(health) && health > 0 && name !== '') {
-          enemySidebar.classList.add('show');
-          enemySidebar.style.display = 'flex';
-          
-          const nameEl = enemySidebar.querySelector('.enemy-stats div:first-child strong');
-          const strengthEl = enemySidebar.querySelector('.enemy-stats div:nth-child(2) strong');
-          const healthEl = enemySidebar.querySelector('.enemy-stats div:nth-child(3) strong');
-          
-          if (nameEl) nameEl.textContent = name;
-          if (strengthEl) {
-            const str = parseInt(enemyStrength, 10) || 0;
-            strengthEl.textContent = str.toString();
-          }
-          if (healthEl) {
-            healthEl.textContent = health.toString();
-          }
-        } else {
-          enemySidebar.classList.remove('show');
+      const list = [];
+      for (let i = 0; i < enemyUpdates.length; i++) {
+        const el = enemyUpdates[i];
+        const name = (el.getAttribute('data-enemy-name') || '').trim();
+        const strength = parseInt(el.getAttribute('data-enemy-strength') || '0', 10);
+        const health = parseInt(el.getAttribute('data-enemy-health') || '0', 10);
+        if (name !== '' && !isNaN(health) && health > 0) {
+          list.push({ name: name, strength: isNaN(strength) ? 0 : strength, health: health });
         }
+      }
+      
+      if (list.length > 0) {
+        enemySidebar.classList.add('show');
+        enemySidebar.style.display = 'flex';
+        const showCount = list.length;
+        for (let i = 0; i < panels.length; i++) {
+          const panel = panels[i];
+          if (i < showCount) {
+            panel.style.display = 'flex';
+            const e = list[i];
+            const nameEl = panel.querySelector('.enemy-stats div:first-child strong');
+            const strengthEl = panel.querySelector('.enemy-stats div:nth-child(2) strong');
+            const healthEl = panel.querySelector('.enemy-stats div:nth-child(3) strong');
+            if (nameEl) nameEl.textContent = e.name;
+            if (strengthEl) strengthEl.textContent = String(e.strength);
+            if (healthEl) healthEl.textContent = String(e.health);
+          }
+        }
+      } else {
+        enemySidebar.classList.remove('show');
       }
     }
     
@@ -118,13 +121,31 @@
       </section>
 
       <aside class="enemy-sidebar" style="display: none;">
-        <div class="enemy-image">
-          <div class="enemy-placeholder">Enemy</div>
-        </div>
-        <div class="enemy-stats">
-          <div>Name: <strong></strong></div>
-          <div>Strength: <strong></strong></div>
-          <div>Health: <strong></strong></div>
+        <div class="enemy-panels">
+          <div class="enemy-panel">
+            <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
+            <div class="enemy-stats">
+              <div>Name: <strong></strong></div>
+              <div>Strength: <strong></strong></div>
+              <div>Health: <strong></strong></div>
+            </div>
+          </div>
+          <div class="enemy-panel">
+            <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
+            <div class="enemy-stats">
+              <div>Name: <strong></strong></div>
+              <div>Strength: <strong></strong></div>
+              <div>Health: <strong></strong></div>
+            </div>
+          </div>
+          <div class="enemy-panel">
+            <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
+            <div class="enemy-stats">
+              <div>Name: <strong></strong></div>
+              <div>Strength: <strong></strong></div>
+              <div>Health: <strong></strong></div>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

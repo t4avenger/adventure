@@ -7,6 +7,8 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -46,7 +48,51 @@ const (
 
 	// OpAdd is the effect operation for adding to a stat.
 	OpAdd = "add"
+
+	// HordeName is the display name when 4+ enemies are combined.
+	HordeName = "Horde"
 )
+
+// getBattleEnemies returns initial enemy state from battle (Enemies list or legacy single-enemy fields).
+func getBattleEnemies(b *Battle) []EnemyState {
+	if len(b.Enemies) > 0 {
+		out := make([]EnemyState, 0, len(b.Enemies))
+		for _, e := range b.Enemies {
+			h := e.Health
+			if h <= 0 {
+				h = 1
+			}
+			out = append(out, EnemyState{Name: e.Name, Strength: e.Strength, Health: h})
+		}
+		return out
+	}
+	if b.EnemyName != "" || b.EnemyHealth > 0 {
+		h := b.EnemyHealth
+		if h <= 0 {
+			h = 1
+		}
+		return []EnemyState{{Name: b.EnemyName, Strength: b.EnemyStrength, Health: h}}
+	}
+	return nil
+}
+
+// collapseToHorde returns a single "Horde" entry if len(es) > 3.
+func collapseToHorde(es []EnemyState) []EnemyState {
+	if len(es) <= 3 {
+		return es
+	}
+	sumHealth := 0
+	sumStr := 0
+	for _, e := range es {
+		sumHealth += e.Health
+		sumStr += e.Strength
+	}
+	meanStr := sumStr / len(es)
+	if meanStr < MinStat {
+		meanStr = MinStat
+	}
+	return []EnemyState{{Name: HordeName, Strength: meanStr, Health: sumHealth}}
+}
 
 // Engine manages game state and resolves player choices.
 type Engine struct {
@@ -93,11 +139,20 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 	}
 
 	var ch *Choice
-	// Linear search is acceptable here as nodes typically have < 10 choices
 	for i := range node.Choices {
 		if node.Choices[i].Key == choiceKey {
 			ch = &node.Choices[i]
 			break
+		}
+	}
+	// Dynamic battle keys: "battle:attack:0", "battle:luck:1", "battle:run"
+	if ch == nil {
+		for i := range node.Choices {
+			c := &node.Choices[i]
+			if c.Battle != nil && (choiceKey == c.Key || strings.HasPrefix(choiceKey, c.Key+":")) {
+				ch = c
+				break
+			}
 		}
 	}
 	if ch == nil {
@@ -135,70 +190,15 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 		}
 	}
 
-	// Battle (opposed Strength + 2d6 rolls for player and enemy), resolved
-	// one round at a time so the player can choose actions each round.
+	// Battle: multi-enemy (Enemies list) or legacy single enemy.
 	if ch.Battle != nil {
-		// Initialize enemy state if this is the first round.
-		if st.EnemyHealth <= 0 {
-			st.EnemyHealth = ch.Battle.EnemyHealth
-			if st.EnemyHealth <= 0 {
-				st.EnemyHealth = 1
-			}
-			st.EnemyName = ch.Battle.EnemyName
-			st.EnemyStrength = ch.Battle.EnemyStrength
+		battleNext := e.applyBattle(st, ch, choiceKey, &lastRoll, &lastOutcome)
+		if battleNext != "" {
+			next = battleNext
 		}
-
-		playerDamage := 1
-		// Luck-based attack: spend 1 Luck (clamped) and deal extra damage
-		// to the enemy on a successful hit.
-		if ch.Mode == "battle_luck" {
-			st.Stats.Luck--
-			if st.Stats.Luck < MinStat {
-				st.Stats.Luck = MinStat
-			}
-			playerDamage = 2
-		}
-
-		var battleLastRoll *int
-		var battleOutcome string
-		var updatedSt *PlayerState
-		var newEnemyHealth int
-		updatedSt, newEnemyHealth, battleLastRoll, battleOutcome = e.resolveBattleRound(st, *ch.Battle, st.EnemyHealth, playerDamage)
-		*st = *updatedSt
-		st.EnemyHealth = newEnemyHealth
-
-		if battleLastRoll != nil {
-			lastRoll = battleLastRoll
-		}
-		if battleOutcome != "" {
-			lastOutcome = &battleOutcome
-		}
-
-		switch battleOutcome {
-		case OutcomeVictory:
-			// Clear enemy state when battle is won
-			st.EnemyHealth = 0
-			st.EnemyName = ""
-			st.EnemyStrength = 0
-			if ch.Battle.OnVictoryNext != "" {
-				next = ch.Battle.OnVictoryNext
-			}
-		case OutcomeDefeat:
-			// Clear enemy state when player dies
-			st.EnemyHealth = 0
-			st.EnemyName = ""
-			st.EnemyStrength = 0
-			next = DeathNodeID
-		default:
-			// Continue fighting on the same node; let the UI render another
-			// round of choices.
-			next = st.NodeID
-		}
-	} else if st.EnemyHealth > 0 {
-		// If this choice doesn't have a battle, clear enemy state (e.g., running away)
-		st.EnemyHealth = 0
-		st.EnemyName = ""
-		st.EnemyStrength = 0
+	} else if len(st.Enemies) > 0 {
+		// Non-battle choice while in combat (e.g. run from another choice): clear enemies.
+		st.Enemies = nil
 	}
 
 	if next == "" {
@@ -230,15 +230,88 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 	return StepResult{State: *st, LastRoll: lastRoll, LastOutcome: lastOutcome}, nil
 }
 
+// applyBattle handles one battle round (or run). Returns next node ID or "" if caller should keep next.
+func (e *Engine) applyBattle(st *PlayerState, ch *Choice, choiceKey string, lastRoll **int, lastOutcome **string) string {
+	b := ch.Battle
+	// Initialize enemies from battle if first round.
+	if len(st.Enemies) == 0 {
+		st.Enemies = collapseToHorde(getBattleEnemies(b))
+		if len(st.Enemies) == 0 {
+			return b.OnVictoryNext
+		}
+	}
+
+	// Parse action: "run", "attack:N", "luck:N" or legacy exact key (attack:0 / luck:0 from ch.Mode).
+	var action string
+	var enemyIndex int
+	if strings.HasPrefix(choiceKey, ch.Key+":") {
+		action = choiceKey[len(ch.Key)+1:]
+	} else {
+		// Legacy single-enemy choice: treat as attack:0 or luck:0 from mode.
+		if ch.Mode == "battle_luck" {
+			action = "luck:0"
+		} else {
+			action = "attack:0"
+		}
+	}
+
+	if action == "run" {
+		st.Enemies = nil
+		return ch.Next
+	}
+
+	// Parse "attack:N" or "luck:N"
+	isLuck := strings.HasPrefix(action, "luck:")
+	if !isLuck && !strings.HasPrefix(action, "attack:") {
+		return ""
+	}
+	idxStr := action[strings.Index(action, ":")+1:]
+	n, err := strconv.Atoi(idxStr)
+	if err != nil || n < 0 || n >= len(st.Enemies) {
+		return ""
+	}
+	enemyIndex = n
+
+	playerDamage := 1
+	if isLuck {
+		st.Stats.Luck--
+		if st.Stats.Luck < MinStat {
+			st.Stats.Luck = MinStat
+		}
+		playerDamage = 2
+	}
+
+	enemyStr := st.Enemies[enemyIndex].Strength
+	enemyHp := st.Enemies[enemyIndex].Health
+	updatedSt, newHealth, rollResult, outcome := e.resolveBattleRound(st, enemyStr, enemyHp, playerDamage)
+	*st = *updatedSt
+	if rollResult != nil {
+		*lastRoll = rollResult
+	}
+	if outcome != "" {
+		*lastOutcome = &outcome
+	}
+
+	st.Enemies[enemyIndex].Health = newHealth
+	if newHealth <= 0 {
+		st.Enemies = append(st.Enemies[:enemyIndex], st.Enemies[enemyIndex+1:]...)
+	}
+	if len(st.Enemies) == 0 {
+		if b.OnVictoryNext != "" {
+			return b.OnVictoryNext
+		}
+		return ""
+	}
+	if outcome == OutcomeDefeat {
+		st.Enemies = nil
+		return DeathNodeID
+	}
+	return st.NodeID
+}
+
 // resolveBattleRound runs a single opposed-roll round between the player and
-// the configured enemy. It returns the updated player state, the new enemy
-// health, the player's roll for the round, and an outcome string:
-//   - "player_hit" (enemy took damage but survived)
-//   - "enemy_hit"  (player took damage but survived)
-//   - "tie"        (no damage dealt)
-//   - "victory"    (enemy defeated)
-//   - "defeat"     (player reduced to 0 health)
-func (e *Engine) resolveBattleRound(st *PlayerState, b Battle, enemyHealth, playerDamage int) (updatedState *PlayerState, newEnemyHealth int, rollResult *int, outcome string) {
+// one enemy (strength + health). Returns updated player state, new enemy health, roll, outcome.
+func (e *Engine) resolveBattleRound(st *PlayerState, enemyStrength, enemyHealth, playerDamage int) (updatedState *PlayerState, newEnemyHealth int, rollResult *int, outcome string) {
 	if enemyHealth <= 0 {
 		enemyHealth = 1
 	}
@@ -247,7 +320,7 @@ func (e *Engine) resolveBattleRound(st *PlayerState, b Battle, enemyHealth, play
 	enemyRoll := roll2d6()
 
 	playerTotal := st.Stats.Strength + playerRoll
-	enemyTotal := b.EnemyStrength + enemyRoll
+	enemyTotal := enemyStrength + enemyRoll
 
 	outcome = OutcomeTie
 
@@ -278,6 +351,11 @@ func (e *Engine) resolveBattleRound(st *PlayerState, b Battle, enemyHealth, play
 	newEnemyHealth = enemyHealth
 	rollResult = &playerRoll
 	return updatedState, newEnemyHealth, rollResult, outcome
+}
+
+// HasEnemies returns true if the player is in an active battle.
+func (st *PlayerState) HasEnemies() bool {
+	return len(st.Enemies) > 0
 }
 
 func checkRoll(st *PlayerState, c Check, roll int) (bool, error) {

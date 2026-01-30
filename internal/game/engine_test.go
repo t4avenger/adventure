@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+const safeNodeID = "safe"
+
 func TestNewPlayer(t *testing.T) {
 	start := "test_node"
 	player := NewPlayer(start)
@@ -460,14 +462,11 @@ func TestResolveBattleRound_HealthNeverNegative(t *testing.T) {
 	player.Stats.Strength = 5
 
 	battle := Battle{
-		EnemyName:     "Strong enemy",
 		EnemyStrength: 10,
 		EnemyHealth:   3,
-		OnVictoryNext: "victory",
-		OnDefeatNext:  "defeat",
 	}
 
-	result, enemyHealth, _, outcome := engine.resolveBattleRound(&player, battle, battle.EnemyHealth, 1)
+	result, enemyHealth, _, outcome := engine.resolveBattleRound(&player, battle.EnemyStrength, battle.EnemyHealth, 1)
 
 	if result.Stats.Health < MinHealth {
 		t.Errorf("Expected health never below %d, got %d", MinHealth, result.Stats.Health)
@@ -519,14 +518,17 @@ func TestApplyChoice_BattleInitializesEnemyState(t *testing.T) {
 	}
 
 	// Enemy state should be initialized
-	if result.State.EnemyName != testEnemyName {
-		t.Errorf("Expected EnemyName '%s', got '%s'", testEnemyName, result.State.EnemyName)
+	if len(result.State.Enemies) != 1 {
+		t.Fatalf("Expected 1 enemy, got %d", len(result.State.Enemies))
 	}
-	if result.State.EnemyStrength != 8 {
-		t.Errorf("Expected EnemyStrength 8, got %d", result.State.EnemyStrength)
+	if result.State.Enemies[0].Name != testEnemyName {
+		t.Errorf("Expected EnemyName '%s', got '%s'", testEnemyName, result.State.Enemies[0].Name)
 	}
-	if result.State.EnemyHealth <= 0 {
-		t.Errorf("Expected EnemyHealth > 0, got %d", result.State.EnemyHealth)
+	if result.State.Enemies[0].Strength != 8 {
+		t.Errorf("Expected EnemyStrength 8, got %d", result.State.Enemies[0].Strength)
+	}
+	if result.State.Enemies[0].Health <= 0 {
+		t.Errorf("Expected EnemyHealth > 0, got %d", result.State.Enemies[0].Health)
 	}
 }
 
@@ -561,10 +563,8 @@ func TestApplyChoice_BattleClearsEnemyStateOnVictory(t *testing.T) {
 	player.Stats.Strength = 12
 	player.Stats.Health = 12
 
-	// Set enemy state first
-	player.EnemyName = "Weakling"
-	player.EnemyStrength = 1
-	player.EnemyHealth = 1
+	// Set enemy state first (one weak enemy with 1 health)
+	player.Enemies = []EnemyState{{Name: "Weakling", Strength: 1, Health: 1}}
 
 	// Run multiple rounds until victory (may take a few tries)
 	for i := 0; i < 10; i++ {
@@ -576,14 +576,8 @@ func TestApplyChoice_BattleClearsEnemyStateOnVictory(t *testing.T) {
 
 		if result.State.NodeID == "victory" {
 			// Enemy state should be cleared on victory
-			if result.State.EnemyHealth != 0 {
-				t.Errorf("Expected EnemyHealth 0 on victory, got %d", result.State.EnemyHealth)
-			}
-			if result.State.EnemyName != "" {
-				t.Errorf("Expected EnemyName empty on victory, got '%s'", result.State.EnemyName)
-			}
-			if result.State.EnemyStrength != 0 {
-				t.Errorf("Expected EnemyStrength 0 on victory, got %d", result.State.EnemyStrength)
+			if len(result.State.Enemies) != 0 {
+				t.Errorf("Expected no enemies on victory, got %d", len(result.State.Enemies))
 			}
 			return
 		}
@@ -613,11 +607,11 @@ func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
 					{
 						Key:  "run",
 						Text: "Run away",
-						Next: "safe",
+						Next: safeNodeID,
 					},
 				},
 			},
-			"safe": {
+			safeNodeID: {
 				Text: "You escaped",
 			},
 		},
@@ -625,9 +619,7 @@ func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
 
 	engine := &Engine{Story: story}
 	player := NewPlayer("battle")
-	player.EnemyName = testEnemyName
-	player.EnemyStrength = 8
-	player.EnemyHealth = 2
+	player.Enemies = []EnemyState{{Name: testEnemyName, Strength: 8, Health: 2}}
 
 	result, err := engine.ApplyChoice(&player, "run")
 	if err != nil {
@@ -635,17 +627,11 @@ func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
 	}
 
 	// Enemy state should be cleared when running away
-	if result.State.EnemyHealth != 0 {
-		t.Errorf("Expected EnemyHealth 0 after running, got %d", result.State.EnemyHealth)
+	if len(result.State.Enemies) != 0 {
+		t.Errorf("Expected no enemies after running, got %d", len(result.State.Enemies))
 	}
-	if result.State.EnemyName != "" {
-		t.Errorf("Expected EnemyName empty after running, got '%s'", result.State.EnemyName)
-	}
-	if result.State.EnemyStrength != 0 {
-		t.Errorf("Expected EnemyStrength 0 after running, got %d", result.State.EnemyStrength)
-	}
-	if result.State.NodeID != "safe" {
-		t.Errorf("Expected NodeID 'safe', got '%s'", result.State.NodeID)
+	if result.State.NodeID != safeNodeID {
+		t.Errorf("Expected NodeID %q, got %q", safeNodeID, result.State.NodeID)
 	}
 }
 
@@ -696,5 +682,134 @@ func TestApplyChoice_LuckAttackReducesLuck(t *testing.T) {
 
 	if result.State.Stats.Luck < MinStat {
 		t.Errorf("Expected Luck >= %d, got %d", MinStat, result.State.Stats.Luck)
+	}
+}
+
+func TestApplyChoice_MultiEnemyInit(t *testing.T) {
+	story := &Story{
+		Start: "battle",
+		Nodes: map[string]*Node{
+			"battle": {
+				Text: "Two foes.",
+				Choices: []Choice{
+					{
+						Key:  "battle",
+						Text: "Fight",
+						Next: "forest",
+						Battle: &Battle{
+							Enemies: []Enemy{
+								{Name: "Goblin", Strength: 8, Health: 3},
+								{Name: "Orc", Strength: 10, Health: 5},
+							},
+							OnVictoryNext: "victory",
+							OnDefeatNext:  "defeat",
+						},
+					},
+				},
+			},
+			"victory": {Text: "Won!"},
+			"forest":  {Text: "Escaped."},
+		},
+	}
+	engine := &Engine{Story: story}
+	player := NewPlayer("battle")
+	player.Stats.Strength = 12
+	player.Stats.Health = 12
+
+	result, err := engine.ApplyChoice(&player, "battle:attack:0")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(result.State.Enemies) != 2 {
+		t.Fatalf("Expected 2 enemies after init, got %d", len(result.State.Enemies))
+	}
+	if result.State.Enemies[0].Name != "Goblin" || result.State.Enemies[1].Name != "Orc" {
+		t.Errorf("Expected Goblin and Orc, got %v", result.State.Enemies)
+	}
+}
+
+func TestApplyChoice_BattleRunClearsEnemies(t *testing.T) {
+	story := &Story{
+		Start: "battle",
+		Nodes: map[string]*Node{
+			"battle": {
+				Text: "Foes block the path.",
+				Choices: []Choice{
+					{
+						Key:  "battle",
+						Text: "Fight",
+						Next: safeNodeID,
+						Battle: &Battle{
+							Enemies:       []Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
+							OnVictoryNext: "victory",
+							OnDefeatNext:  "defeat",
+						},
+					},
+				},
+			},
+			safeNodeID: {Text: "You escaped."},
+		},
+	}
+	engine := &Engine{Story: story}
+	player := NewPlayer("battle")
+	player.Enemies = []EnemyState{{Name: "Goblin", Strength: 8, Health: 2}}
+
+	result, err := engine.ApplyChoice(&player, "battle:run")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(result.State.Enemies) != 0 {
+		t.Errorf("Expected no enemies after run, got %d", len(result.State.Enemies))
+	}
+	if result.State.NodeID != safeNodeID {
+		t.Errorf("Expected NodeID %q, got %q", safeNodeID, result.State.NodeID)
+	}
+}
+
+func TestApplyChoice_HordeInit(t *testing.T) {
+	story := &Story{
+		Start: "battle",
+		Nodes: map[string]*Node{
+			"battle": {
+				Text: "A horde.",
+				Choices: []Choice{
+					{
+						Key:  "battle",
+						Text: "Fight",
+						Next: "forest",
+						Battle: &Battle{
+							Enemies: []Enemy{
+								{Name: "A", Strength: 5, Health: 2},
+								{Name: "B", Strength: 6, Health: 2},
+								{Name: "C", Strength: 7, Health: 2},
+								{Name: "D", Strength: 8, Health: 2},
+							},
+							OnVictoryNext: "victory",
+							OnDefeatNext:  "defeat",
+						},
+					},
+				},
+			},
+			"victory": {Text: "Won!"},
+			"forest":  {Text: "Escaped."},
+		},
+	}
+	engine := &Engine{Story: story}
+	player := NewPlayer("battle")
+	player.Stats.Strength = 12
+	player.Stats.Health = 12
+
+	result, err := engine.ApplyChoice(&player, "battle:attack:0")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(result.State.Enemies) != 1 {
+		t.Fatalf("Expected 1 horde entry, got %d", len(result.State.Enemies))
+	}
+	if result.State.Enemies[0].Name != HordeName {
+		t.Errorf("Expected name %q, got %q", HordeName, result.State.Enemies[0].Name)
+	}
+	if result.State.Enemies[0].Health <= 0 {
+		t.Errorf("Expected horde health > 0 (sum 8 minus possible round damage), got %d", result.State.Enemies[0].Health)
 	}
 }

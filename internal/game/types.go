@@ -7,15 +7,20 @@ type Stats struct {
 	Health   int
 }
 
+// EnemyState represents one enemy in combat (current health etc.).
+type EnemyState struct {
+	Name     string
+	Strength int
+	Health   int
+}
+
 // PlayerState tracks the current game state for a player, including
-// their location, stats, flags, and any active enemy in combat.
+// their location, stats, flags, and any active enemies in combat.
 type PlayerState struct {
-	NodeID        string
-	Stats         Stats
-	Flags         map[string]bool
-	EnemyName     string
-	EnemyStrength int
-	EnemyHealth   int
+	NodeID  string
+	Stats   Stats
+	Flags   map[string]bool
+	Enemies []EnemyState // 1–3 shown individually; 4+ stored as one "Horde" entry
 }
 
 // Story represents a complete adventure story with nodes and choices.
@@ -61,12 +66,22 @@ type Effect struct {
 	ClampMin *int   `yaml:"clampMin"`
 }
 
+// Enemy is a single enemy definition in story YAML.
+type Enemy struct {
+	Name     string `yaml:"name"`
+	Strength int    `yaml:"strength"`
+	Health   int    `yaml:"health"`
+}
+
 // Battle describes an opposed-roll combat where both player and enemy
 // roll 2d6 and add their Strength. The higher total scores a hit and
 // deals damage to the other side's Health. The engine resolves one
 // round at a time; the story can keep the player on the same node for
 // multiple rounds or branch on victory/defeat.
+// Use Enemies for multiple foes; legacy single-enemy fields are used when Enemies is empty.
 type Battle struct {
+	Enemies []Enemy `yaml:"enemies"`
+
 	EnemyName     string `yaml:"enemyName"`
 	EnemyStrength int    `yaml:"enemyStrength"`
 	EnemyHealth   int    `yaml:"enemyHealth"`
