@@ -85,6 +85,64 @@ nodes:
       - key: "run"
         text: "Run back into the trees"
         next: "forest"
+      - key: "band"
+        text: "Continue to the bandit stretch"
+        next: "road_three"
+      - key: "horde"
+        text: "Dare the horde further on"
+        next: "road_horde"
+
+  road_three:
+    text: "Two foes block the path: a goblin and an orc. Choose who to attack."
+    choices:
+      - key: "battle"
+        text: "Fight"
+        next: "forest"
+        battle:
+          enemies:
+            - name: "Goblin"
+              strength: 8
+              health: 3
+            - name: "Orc"
+              strength: 10
+              health: 5
+          onVictoryNext: "band_victory"
+          onDefeatNext: "goblin_defeat"
+
+  road_horde:
+    text: "A pack of creatures swarms the road. You face a horde."
+    choices:
+      - key: "battle"
+        text: "Fight"
+        next: "forest"
+        battle:
+          enemies:
+            - name: "Goblin"
+              strength: 6
+              health: 2
+            - name: "Goblin"
+              strength: 6
+              health: 2
+            - name: "Orc"
+              strength: 9
+              health: 4
+            - name: "Wolf"
+              strength: 7
+              health: 3
+          onVictoryNext: "horde_victory"
+          onDefeatNext: "goblin_defeat"
+
+  band_victory:
+    text: "You cut down the band. The road is clear."
+    effects:
+      - op: "add"
+        stat: "luck"
+        value: 1
+    ending: true
+
+  horde_victory:
+    text: "The horde breaks. You stand victorious."
+    ending: true
 
   goblin_victory:
     text: "You cut the goblin down. The road is clear, and you feel a little luckier."

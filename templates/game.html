@@ -1,7 +1,7 @@
 {{define "game.html"}}
   <div class="stats-update" data-strength="{{.State.Stats.Strength}}" data-luck="{{.State.Stats.Luck}}" data-health="{{.State.Stats.Health}}" style="display: none;"></div>
-  {{if gt .State.EnemyHealth 0}}
-  <div class="enemy-update" data-enemy-name="{{.State.EnemyName}}" data-enemy-strength="{{.State.EnemyStrength}}" data-enemy-health="{{.State.EnemyHealth}}" style="display: none;"></div>
+  {{range .Enemies}}
+  <div class="enemy-update" data-enemy-name="{{.Name}}" data-enemy-strength="{{.Strength}}" data-enemy-health="{{.Health}}" style="display: none;"></div>
   {{else}}
   <div class="enemy-update" data-enemy-name="" data-enemy-strength="0" data-enemy-health="0" style="display: none;"></div>
   {{end}}
@@ -35,6 +35,19 @@
   {{else}}
     <div class="choices-area">
       <ul class="choices">
+        {{if .EffectiveChoices}}
+        {{range .EffectiveChoices}}
+          <li>
+            <button class="btn"
+              hx-post="/play"
+              hx-target="#game"
+              hx-swap="innerHTML"
+              hx-vals='{"choice":"{{.Key}}"}'>
+              {{.Text}}
+            </button>
+          </li>
+        {{end}}
+        {{else}}
         {{range .Node.Choices}}
           <li>
             <button class="btn"
@@ -45,6 +58,7 @@
               {{.Text}}
             </button>
           </li>
+        {{end}}
         {{end}}
       </ul>
     </div>

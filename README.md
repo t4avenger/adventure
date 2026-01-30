@@ -7,6 +7,7 @@ A classic text-based adventure game engine inspired by ZX81-style gamebooks, bui
 - **Interactive Story System**: YAML-based story definitions with branching narratives
 - **Character Stats**: Strength, Luck, and Health with bounded values (1-12 for Strength/Luck, 0+ for Health)
 - **Combat System**: Opposed-roll battles where player and enemy roll 2d6 + Strength, with multi-round interactive combat
+- **Multi-Enemy Battles**: Fight 1–3 enemies (choose which to attack or use Luck on) or 4+ as a single **Horde** (combined health, mean strength for balance)
 - **Luck-Based Attacks**: Special attacks that deal extra damage but reduce Luck
 - **Run Away Option**: Ability to flee from battles
 - **Health-Based Game Over**: Reaching 0 health triggers game over
@@ -171,13 +172,17 @@ Combat uses opposed rolls:
 - Higher total deals 1 damage to the loser
 - Ties result in no damage
 
+**Multi-enemy battles:**
+- **1–3 enemies**: Each enemy is shown with name, strength, and health. You choose which to **Attack** or use **Luck** on each round.
+- **4+ enemies**: Shown as a single **Horde** with combined health and **mean strength** (average of all enemies) so large groups stay winnable.
+
 **Combat Actions:**
-- **Attack**: Standard attack (1 damage on hit)
-- **Luck Attack**: Spend 1 Luck to deal 2 damage on hit (Luck clamped to minimum 1)
+- **Attack**: Standard attack on chosen enemy (1 damage on hit)
+- **Luck Attack**: Spend 1 Luck to deal 2 damage on chosen enemy (Luck clamped to minimum 1)
 - **Run Away**: Flee from battle (enemy state is cleared)
 
 Battles continue round-by-round until:
-- Enemy health reaches 0 (victory)
+- All enemies’ health reaches 0 (victory)
 - Player health reaches 0 (defeat/death)
 
 ### Game Over
@@ -218,18 +223,33 @@ Choices can include:
 
 ### Battle Definition
 
+Single enemy (legacy style):
+
 ```yaml
-choices:
-  - key: "fight"
-    text: "Attack the enemy"
-    mode: "battle_attack"
-    battle:
-      enemyName: "Goblin"
-      enemyStrength: 8
-      enemyHealth: 3
-      onVictoryNext: "victory_node"
-      onDefeatNext: "defeat_node"
+battle:
+  enemyName: "Goblin"
+  enemyStrength: 8
+  enemyHealth: 3
+  onVictoryNext: "victory_node"
+  onDefeatNext: "defeat_node"
 ```
+
+Multiple enemies (1–3 shown individually, 4+ as a Horde):
+
+```yaml
+battle:
+  enemies:
+    - name: "Goblin"
+      strength: 6
+      health: 3
+    - name: "Orc"
+      strength: 8
+      health: 4
+  onVictoryNext: "victory_node"
+  onDefeatNext: "defeat_node"
+```
+
+Battle choices are generated automatically (e.g. “Attack Goblin”, “Luck Orc”, “Run away”). Horde strength is the **mean** of all enemy strengths; health is the sum.
 
 ### Effects
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"adventure/internal/game"
 	"adventure/internal/session"
@@ -106,13 +107,22 @@ func (s *Server) sessionID(r *http.Request) string {
 	return c.Value
 }
 
+// BattleChoice is a single choice for battle (attack/luck on target or run).
+type BattleChoice struct {
+	Key  string
+	Text string
+}
+
 // ViewModel contains data for rendering a game view.
 type ViewModel struct {
-	Node        *game.Node
-	State       game.PlayerState
-	Message     string
-	LastRoll    *int
-	LastOutcome *string
+	Node               *game.Node
+	State              game.PlayerState
+	Message            string
+	LastRoll           *int
+	LastOutcome        *string
+	Enemies            []game.EnemyState // 1–3 or single horde for display
+	BattleChoicePrefix string            // e.g. "battle" for keys battle:attack:0
+	EffectiveChoices   []BattleChoice    // when in battle, synthetic choices; else nil
 }
 
 func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outcome *string) (ViewModel, error) {
@@ -120,11 +130,33 @@ func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outc
 	if err != nil {
 		return ViewModel{}, err
 	}
-	return ViewModel{
+	vm := ViewModel{
 		Node:        n,
 		State:       *st,
 		Message:     msg,
 		LastRoll:    roll,
 		LastOutcome: outcome,
-	}, nil
+		Enemies:     st.Enemies,
+	}
+	if len(st.Enemies) > 0 {
+		var battleKey string
+		for i := range n.Choices {
+			if n.Choices[i].Battle != nil {
+				battleKey = n.Choices[i].Key
+				break
+			}
+		}
+		if battleKey != "" {
+			vm.BattleChoicePrefix = battleKey
+			for i, e := range st.Enemies {
+				idxStr := strconv.Itoa(i)
+				vm.EffectiveChoices = append(vm.EffectiveChoices,
+					BattleChoice{Key: battleKey + ":attack:" + idxStr, Text: "Attack " + e.Name},
+					BattleChoice{Key: battleKey + ":luck:" + idxStr, Text: "Luck " + e.Name},
+				)
+			}
+			vm.EffectiveChoices = append(vm.EffectiveChoices, BattleChoice{Key: battleKey + ":run", Text: "Run away"})
+		}
+	}
+	return vm, nil
 }

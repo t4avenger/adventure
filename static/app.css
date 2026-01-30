@@ -74,6 +74,21 @@ html, body {
 .enemy-sidebar.show {
   display: flex !important;
 }
+.enemy-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+.enemy-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #1b1b1b;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
 .enemy-image { display: flex; justify-content: center; width: 100%; }
 .enemy-placeholder {
   width: 150px;
