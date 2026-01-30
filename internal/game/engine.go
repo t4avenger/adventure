@@ -102,10 +102,12 @@ type Engine struct {
 // StepResult contains the result of applying a player choice, including
 // the updated state, any dice rolls, and outcome messages.
 type StepResult struct {
-	State        PlayerState
-	LastRoll     *int
-	LastOutcome  *string // "success"/"failure"
-	ErrorMessage string
+	State          PlayerState
+	LastRoll       *int
+	LastPlayerDice *[2]int // two d6 values for display
+	LastEnemyDice  *[2]int // battle only
+	LastOutcome    *string // "success"/"failure"
+	ErrorMessage   string
 }
 
 // NewPlayer creates a new player state with default starting stats.
@@ -163,12 +165,16 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 	applyEffects(st, ch.Effects)
 
 	var lastRoll *int
+	var lastPlayerDice *[2]int
+	var lastEnemyDice *[2]int
 	var lastOutcome *string
 
 	next := ch.Next
 	if ch.Check != nil {
-		roll := roll2d6()
+		d1, d2 := roll2d6Ex()
+		roll := d1 + d2
 		lastRoll = &roll
+		lastPlayerDice = &[2]int{d1, d2}
 
 		ok, err := checkRoll(st, *ch.Check, roll)
 		if err != nil {
@@ -192,7 +198,7 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 
 	// Battle: multi-enemy (Enemies list) or legacy single enemy.
 	if ch.Battle != nil {
-		battleNext := e.applyBattle(st, ch, choiceKey, &lastRoll, &lastOutcome)
+		battleNext := e.applyBattle(st, ch, choiceKey, &lastRoll, &lastOutcome, &lastPlayerDice, &lastEnemyDice)
 		if battleNext != "" {
 			next = battleNext
 		}
@@ -227,11 +233,11 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 		}
 	}
 
-	return StepResult{State: *st, LastRoll: lastRoll, LastOutcome: lastOutcome}, nil
+	return StepResult{State: *st, LastRoll: lastRoll, LastPlayerDice: lastPlayerDice, LastEnemyDice: lastEnemyDice, LastOutcome: lastOutcome}, nil
 }
 
 // applyBattle handles one battle round (or run). Returns next node ID or "" if caller should keep next.
-func (e *Engine) applyBattle(st *PlayerState, ch *Choice, choiceKey string, lastRoll **int, lastOutcome **string) string {
+func (e *Engine) applyBattle(st *PlayerState, ch *Choice, choiceKey string, lastRoll **int, lastOutcome **string, lastPlayerDice, lastEnemyDice **[2]int) string {
 	b := ch.Battle
 	// Initialize enemies from battle if first round.
 	if len(st.Enemies) == 0 {
@@ -283,10 +289,15 @@ func (e *Engine) applyBattle(st *PlayerState, ch *Choice, choiceKey string, last
 
 	enemyStr := st.Enemies[enemyIndex].Strength
 	enemyHp := st.Enemies[enemyIndex].Health
-	updatedSt, newHealth, rollResult, outcome := e.resolveBattleRound(st, enemyStr, enemyHp, playerDamage)
+	updatedSt, newHealth, playerDice, enemyDice, outcome := e.resolveBattleRound(st, enemyStr, enemyHp, playerDamage)
 	*st = *updatedSt
-	if rollResult != nil {
-		*lastRoll = rollResult
+	if playerDice != nil {
+		pd := *playerDice
+		ed := *enemyDice
+		*lastPlayerDice = &pd
+		*lastEnemyDice = &ed
+		sum := pd[0] + pd[1]
+		*lastRoll = &sum
 	}
 	if outcome != "" {
 		*lastOutcome = &outcome
@@ -310,14 +321,16 @@ func (e *Engine) applyBattle(st *PlayerState, ch *Choice, choiceKey string, last
 }
 
 // resolveBattleRound runs a single opposed-roll round between the player and
-// one enemy (strength + health). Returns updated player state, new enemy health, roll, outcome.
-func (e *Engine) resolveBattleRound(st *PlayerState, enemyStrength, enemyHealth, playerDamage int) (updatedState *PlayerState, newEnemyHealth int, rollResult *int, outcome string) {
+// one enemy (strength + health). Returns updated player state, new enemy health, player/enemy dice, outcome.
+func (e *Engine) resolveBattleRound(st *PlayerState, enemyStrength, enemyHealth, playerDamage int) (updatedState *PlayerState, newEnemyHealth int, playerDice, enemyDice *[2]int, outcome string) {
 	if enemyHealth <= 0 {
 		enemyHealth = 1
 	}
 
-	playerRoll := roll2d6()
-	enemyRoll := roll2d6()
+	pd1, pd2 := roll2d6Ex()
+	ed1, ed2 := roll2d6Ex()
+	playerRoll := pd1 + pd2
+	enemyRoll := ed1 + ed2
 
 	playerTotal := st.Stats.Strength + playerRoll
 	enemyTotal := enemyStrength + enemyRoll
@@ -349,8 +362,9 @@ func (e *Engine) resolveBattleRound(st *PlayerState, enemyStrength, enemyHealth,
 
 	updatedState = &result
 	newEnemyHealth = enemyHealth
-	rollResult = &playerRoll
-	return updatedState, newEnemyHealth, rollResult, outcome
+	playerDice = &[2]int{pd1, pd2}
+	enemyDice = &[2]int{ed1, ed2}
+	return updatedState, newEnemyHealth, playerDice, enemyDice, outcome
 }
 
 // HasEnemies returns true if the player is in an active battle.
@@ -425,9 +439,11 @@ func applyEffects(st *PlayerState, effs []Effect) {
 	}
 }
 
-// crypto-rand small helper; plenty for a adventure
-func roll2d6() int {
-	return d6() + d6()
+// roll2d6Ex returns the two d6 values for display.
+func roll2d6Ex() (d1, d2 int) {
+	d1 = d6()
+	d2 = d6()
+	return d1, d2
 }
 
 func d6() int {

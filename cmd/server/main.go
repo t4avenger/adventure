@@ -20,7 +20,13 @@ func main() {
 
 	tmpl := template.Must(template.ParseFiles(
 		"templates/layout.html",
+		"templates/layout_head.html",
+		"templates/sidebar_left.html",
+		"templates/sidebar_right.html",
+		"templates/sidebar_left_oob.html",
+		"templates/sidebar_right_oob.html",
 		"templates/game.html",
+		"templates/game_response.html",
 		"templates/start.html",
 	))
 

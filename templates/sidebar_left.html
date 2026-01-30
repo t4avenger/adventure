@@ -1,0 +1,39 @@
+{{define "sidebar_left.html"}}
+<aside id="sidebar-left" class="sidebar">
+  <div class="character-image">
+    <div class="character-placeholder">Character</div>
+  </div>
+  <div class="character-stats">
+    <div>Strength: <strong id="stat-strength">{{if .State}}{{.State.Stats.Strength}}{{else if .Start}}{{.Start.Stats.Strength}}{{end}}</strong></div>
+    <div>Luck: <strong id="stat-luck">{{if .State}}{{.State.Stats.Luck}}{{else if .Start}}{{.Start.Stats.Luck}}{{end}}</strong></div>
+    <div>Health: <strong id="stat-health">{{if .State}}{{.State.Stats.Health}}{{else if .Start}}{{.Start.Stats.Health}}{{end}}</strong></div>
+  </div>
+  <div class="player-dice-area">
+    <div class="player-dice-last" style="display: none;">
+      <span class="dice-label">Your roll</span>
+      <div class="dice-pair">
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      </div>
+    </div>
+    <div class="player-dice-stats" style="display: none;">
+      <span class="dice-label">Strength</span>
+      <div class="dice-pair stat-dice strength-dice">
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      </div>
+      <span class="dice-label">Luck</span>
+      <div class="dice-pair stat-dice luck-dice">
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      </div>
+      <span class="dice-label">Health (2d6+6)</span>
+      <div class="dice-pair stat-dice health-dice">
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <span class="health-plus-six">+ 6</span>
+      </div>
+    </div>
+  </div>
+</aside>
+{{end}}

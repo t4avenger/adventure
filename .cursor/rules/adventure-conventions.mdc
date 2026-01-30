@@ -1,0 +1,29 @@
+---
+description: HTMX rules, tests, README and tooling for the Adventure game
+alwaysApply: true
+---
+
+# Adventure project conventions
+
+## HTMX and frontend
+
+- **Server returns HTML**: Prefer fragments and OOB swaps (`hx-swap-oob="true"`) for changing regions; avoid returning only data and painting UI in JS.
+- **Minimal JS**: Use JS for behaviour that can’t be HTML (e.g. dice animation) and narrow event glue (e.g. `htmx:afterSwap` scoped to `#game`). Prefer OOB for sidebar content.
+- **Events**: Scope HTMX listeners (e.g. only when `evt.detail.target.id === 'game'`); no global side effects or extra timeouts.
+- **No inline script**: Keep all script in `static/js/`; load from layout. See `docs/HTMX_AND_JS_REFACTOR_PLAN.md` for full HTMX rules.
+
+## Tests
+
+- **Go**: When changing game logic, handlers, or session behaviour, add or update tests in the matching `*_test.go` (e.g. `internal/game/engine_test.go`, `internal/web/` if needed).
+- **JavaScript**: When changing `static/js/app.js` (sidebar sync, dice, HTMX glue), add or update tests in `static/js/app.test.js`. Run `make test-js` or `npm test`.
+
+## Docs and tooling
+
+- **README**: When adding requirements (e.g. Node/npm), new commands, Makefile targets, or CI steps, update README (Requirements, Running tests, Makefile table, Development).
+- **Makefile**: When adding scripts or tools (Go or JS), add a target and include it in `check` if it should run in CI (e.g. `test-js`, `lint-js`).
+- **GitHub Actions**: When adding lint/test steps (e.g. ESLint, Jest), add them to `.github/workflows/test.yml` and document in README.
+
+## Reference
+
+- Full HTMX/JS plan: `docs/HTMX_AND_JS_REFACTOR_PLAN.md`
+- Go tools: `make install-tools`; JS: `make install-js`. Run `make check` for all checks.

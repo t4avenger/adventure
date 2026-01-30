@@ -9,46 +9,61 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.22'
-    
-    - name: Verify dependencies
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Verify Go dependencies
       run: go mod verify
-    
-    - name: Download dependencies
+
+    - name: Download Go dependencies
       run: go mod download
-    
-    - name: Check formatting
+
+    - name: Install JavaScript dependencies
+      run: npm ci
+
+    - name: Check Go formatting
       run: |
         if [ "$(gofmt -s -d .)" ]; then
           echo "Code is not formatted. Run 'go fmt ./...'"
           gofmt -s -d .
           exit 1
         fi
-    
+
     - name: Run go vet
       run: go vet ./...
-    
+
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
-    
+
     - name: Run staticcheck
       run: staticcheck ./...
-    
+
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v4
       with:
         version: latest
         args: --timeout=5m --out-format=colored-line-number
-    
-    - name: Run tests
+
+    - name: Run Go tests
       run: CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ./...
-    
-    - name: Show coverage
+
+    - name: Show Go coverage
       run: go tool cover -func=coverage.out
+
+    - name: Run JavaScript tests
+      run: npm test
+
+    - name: Run ESLint
+      run: npm run lint

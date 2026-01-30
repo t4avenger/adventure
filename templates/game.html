@@ -1,5 +1,11 @@
 {{define "game.html"}}
   <div class="stats-update" data-strength="{{.State.Stats.Strength}}" data-luck="{{.State.Stats.Luck}}" data-health="{{.State.Stats.Health}}" style="display: none;"></div>
+  {{if .LastPlayerDice}}
+  <div class="player-dice-update" data-dice1="{{index .LastPlayerDice 0}}" data-dice2="{{index .LastPlayerDice 1}}" style="display: none;"></div>
+  {{end}}
+  {{if .LastEnemyDice}}
+  <div class="enemy-dice-update" data-dice1="{{index .LastEnemyDice 0}}" data-dice2="{{index .LastEnemyDice 1}}" style="display: none;"></div>
+  {{end}}
   {{range .Enemies}}
   <div class="enemy-update" data-enemy-name="{{.Name}}" data-enemy-strength="{{.Strength}}" data-enemy-health="{{.Health}}" style="display: none;"></div>
   {{else}}

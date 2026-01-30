@@ -32,6 +32,10 @@ coverage.*
 # env file
 .env
 
+# Node (for JS tests)
+node_modules/
+package-lock.json
+
 # Editor/IDE
 # .idea/
 # .vscode/

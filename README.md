@@ -12,6 +12,7 @@ A classic text-based adventure game engine inspired by ZX81-style gamebooks, bui
 - **Run Away Option**: Ability to flee from battles
 - **Health-Based Game Over**: Reaching 0 health triggers game over
 - **Modern UI**: ZX81-inspired layout with character stats on the left, story in the center, and enemy stats on the right during battles
+- **ZX81-Style Dice**: Blocky green-on-black dice in the left sidebar (your last roll, or per-stat rolls at character creation) and in the right sidebar during battle (enemy’s roll), with a short roll animation so you can verify outcomes
 - **Session Management**: In-memory session store for game state persistence
 
 ## Project Structure
@@ -45,7 +46,12 @@ adventure/
 │   ├── game.html            # Game play template
 │   └── start.html           # Character creation template
 ├── static/
-│   └── app.css              # Application styles
+│   ├── app.css               # Application styles
+│   └── js/
+│       ├── app.js             # UI sync and dice animation
+│       └── app.test.js        # Jest unit tests
+├── package.json              # Node deps: Jest, ESLint
+├── .eslintrc.cjs             # ESLint config for static/js
 └── .github/
     └── workflows/
         └── test.yml         # CI/CD test workflow
@@ -53,7 +59,8 @@ adventure/
 
 ## Requirements
 
-- Go 1.22 or later
+- **Go** 1.22 or later
+- **Node.js** 18+ and **npm** (for running JavaScript tests and linting; optional if you only run the game)
 - A modern web browser (for playing the game)
 
 ## Installation
@@ -101,14 +108,30 @@ The game will be available at `http://localhost:8080`
 
 ## Running Tests
 
-Run all tests (with race detection if gcc/CGO is available):
+### Go tests
+
+Run all Go tests (with race detection if gcc/CGO is available):
 ```bash
 make test
 ```
 
-Or run tests directly:
+Or run Go tests directly:
 ```bash
 go test ./...
+```
+
+### JavaScript tests
+
+The UI logic in `static/js/` (sidebar sync, dice animation) is tested with Jest. Install JS dependencies once, then run tests:
+
+```bash
+make install-js   # or: npm install
+make test-js      # or: npm test
+```
+
+Run JS tests in watch mode:
+```bash
+npm run test:watch
 ```
 
 Run tests with race detector (requires gcc/CGO):
@@ -184,6 +207,12 @@ Combat uses opposed rolls:
 Battles continue round-by-round until:
 - All enemies’ health reaches 0 (victory)
 - Player health reaches 0 (defeat/death)
+
+### Dice display
+
+- **Left sidebar**: Your last 2d6 roll is always shown (or, on character creation, one 2d6 pair per stat: Strength, Luck, Health). The display persists until the next roll.
+- **Right sidebar**: During battle, the enemy’s 2d6 roll is shown so you can see both totals and verify who won the round.
+- Dice use a ZX81-style blocky pip display (CSS only, no images). A brief “roll” animation plays when new dice appear.
 
 ### Game Over
 
@@ -308,28 +337,43 @@ staticcheck ./...
 
 **Makefile**: Convenient commands for common tasks
 ```bash
-make install-tools  # Install all linting tools
-make check          # Run all checks (format, vet, lint, test)
-make lint           # Run golangci-lint
-make fmt            # Format code
+make install-tools  # Install Go linting tools (golangci-lint, staticcheck, goimports)
+make install-js     # Install JS dependencies (Jest, ESLint)
+make check          # Run all checks (Go + JS: format, vet, lint, test)
+make test           # Run Go tests with race detection
+make test-js        # Run JavaScript unit tests (Jest)
+make test-short     # Run Go tests without race (faster)
+make lint           # Run golangci-lint (Go)
+make lint-js        # Run ESLint on static/js
+make fmt            # Format Go code
 make vet            # Run go vet
 make staticcheck    # Run staticcheck
-make test           # Run tests with race detection
 make build          # Build the application
 make run            # Run the application
+make clean          # Remove bin/ and coverage.out
 ```
 
-**Note**: The linting tools (`golangci-lint`, `staticcheck`, `goimports`) are not Go module dependencies. They are standalone binaries installed via `go install` and stored in `$GOPATH/bin` or `$HOME/go/bin`. Make sure this directory is in your `PATH`.
+**JavaScript**: Linting and testing
+```bash
+npm install        # Install dependencies (or make install-js)
+npm test           # Run Jest tests
+npm run lint       # Run ESLint on static/js
+npm run lint:fix   # ESLint with auto-fix
+```
+
+**Note**: The Go linting tools (`golangci-lint`, `staticcheck`, `goimports`) are not Go module dependencies. They are standalone binaries installed via `go install` and stored in `$GOPATH/bin` or `$HOME/go/bin`. Make sure this directory is in your `PATH`. JavaScript tools (Jest, ESLint) are installed via `npm install` and live in `node_modules/`.
 
 ### Testing
 
-All game logic should have corresponding tests:
+**Go**: All game logic should have corresponding tests:
 - Engine logic: `internal/game/engine_test.go`
 - Character stats: `internal/game/character_test.go`
 - Story loading: `internal/game/story_test.go`
 - Session store: `internal/session/memory_test.go`
 
-Tests run automatically on pull requests via GitHub Actions, along with linting and static analysis checks.
+**JavaScript**: UI logic in `static/js/` (sidebar sync, dice animation, HTMX glue) is covered by Jest in `static/js/app.test.js`. Run with `make test-js` or `npm test`.
+
+**CI**: Go and JS tests, plus Go formatting (gofmt), vet, staticcheck, golangci-lint and ESLint, run automatically on pull requests and pushes to `main`/`master` via GitHub Actions (`.github/workflows/test.yml`).
 
 ### Performance Considerations
 
