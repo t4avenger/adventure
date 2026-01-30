@@ -1,0 +1,35 @@
+{{define "sidebar_left_oob.html"}}
+<aside id="sidebar-left" class="sidebar" hx-swap-oob="true">
+  <div class="character-image">
+    <div class="character-placeholder">Character</div>
+  </div>
+  <div class="character-stats">
+    <div>Strength: <strong id="stat-strength">{{.State.Stats.Strength}}</strong></div>
+    <div>Luck: <strong id="stat-luck">{{.State.Stats.Luck}}</strong></div>
+    <div>Health: <strong id="stat-health">{{.State.Stats.Health}}</strong></div>
+  </div>
+  <div class="player-dice-area">
+    {{if .LastPlayerDice}}
+    <div class="player-dice-last" style="display: block;">
+      <span class="dice-label">Your roll</span>
+      <div class="dice-pair">
+        <div class="die zx81-die" data-face="{{index .LastPlayerDice 0}}"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+        <div class="die zx81-die" data-face="{{index .LastPlayerDice 1}}"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      </div>
+    </div>
+    <div class="player-dice-stats" style="display: none;">
+      <span class="dice-label">Strength</span><div class="dice-pair stat-dice strength-dice"><div class="die zx81-die" data-face="1"></div><div class="die zx81-die" data-face="1"></div></div>
+      <span class="dice-label">Luck</span><div class="dice-pair stat-dice luck-dice"><div class="die zx81-die" data-face="1"></div><div class="die zx81-die" data-face="1"></div></div>
+      <span class="dice-label">Health (2d6+6)</span><div class="dice-pair stat-dice health-dice"><div class="die zx81-die" data-face="1"></div><div class="die zx81-die" data-face="1"></div><span class="health-plus-six">+ 6</span></div>
+    </div>
+    {{else}}
+    <div class="player-dice-last" style="display: none;"></div>
+    <div class="player-dice-stats" style="display: none;">
+      <span class="dice-label">Strength</span><div class="dice-pair stat-dice strength-dice"><div class="die zx81-die" data-face="1"></div><div class="die zx81-die" data-face="1"></div></div>
+      <span class="dice-label">Luck</span><div class="dice-pair stat-dice luck-dice"><div class="die zx81-die" data-face="1"></div><div class="die zx81-die" data-face="1"></div></div>
+      <span class="dice-label">Health (2d6+6)</span><div class="dice-pair stat-dice health-dice"><div class="die zx81-die" data-face="1"></div><div class="die zx81-die" data-face="1"></div><span class="health-plus-six">+ 6</span></div>
+    </div>
+    {{end}}
+  </div>
+</aside>
+{{end}}

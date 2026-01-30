@@ -53,3 +53,26 @@ func TestRollStats_Distribution(t *testing.T) {
 		t.Errorf("Expected at least 5 different health values, got %d", len(healthCounts))
 	}
 }
+
+func TestRollStatsDetailed(t *testing.T) {
+	for i := 0; i < 50; i++ {
+		stats, dice := RollStatsDetailed()
+
+		if stats.Strength != dice[0][0]+dice[0][1] {
+			t.Errorf("Strength %d != dice sum %d+%d", stats.Strength, dice[0][0], dice[0][1])
+		}
+		if stats.Luck != dice[1][0]+dice[1][1] {
+			t.Errorf("Luck %d != dice sum %d+%d", stats.Luck, dice[1][0], dice[1][1])
+		}
+		if stats.Health != dice[2][0]+dice[2][1]+6 {
+			t.Errorf("Health %d != dice sum %d+%d+6", stats.Health, dice[2][0], dice[2][1])
+		}
+		for j := 0; j < 3; j++ {
+			for k := 0; k < 2; k++ {
+				if dice[j][k] < 1 || dice[j][k] > 6 {
+					t.Errorf("dice[%d][%d] = %d, expected 1-6", j, k, dice[j][k])
+				}
+			}
+		}
+	}
+}

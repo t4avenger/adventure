@@ -1,0 +1,42 @@
+{{define "sidebar_right_oob.html"}}
+<aside id="sidebar-right" class="enemy-sidebar {{if .Enemies}}show{{end}}" style="{{if .Enemies}}display: flex;{{else}}display: none;{{end}}" hx-swap-oob="true">
+  <div class="enemy-panels">
+    <div class="enemy-panel" style="display: {{if ge (len .Enemies) 1}}flex{{else}}none{{end}};">
+      <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
+      <div class="enemy-stats">
+        <div>Name: <strong>{{if ge (len .Enemies) 1}}{{(index .Enemies 0).Name}}{{end}}</strong></div>
+        <div>Strength: <strong>{{if ge (len .Enemies) 1}}{{(index .Enemies 0).Strength}}{{end}}</strong></div>
+        <div>Health: <strong>{{if ge (len .Enemies) 1}}{{(index .Enemies 0).Health}}{{end}}</strong></div>
+      </div>
+    </div>
+    <div class="enemy-panel" style="display: {{if ge (len .Enemies) 2}}flex{{else}}none{{end}};">
+      <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
+      <div class="enemy-stats">
+        <div>Name: <strong>{{if ge (len .Enemies) 2}}{{(index .Enemies 1).Name}}{{end}}</strong></div>
+        <div>Strength: <strong>{{if ge (len .Enemies) 2}}{{(index .Enemies 1).Strength}}{{end}}</strong></div>
+        <div>Health: <strong>{{if ge (len .Enemies) 2}}{{(index .Enemies 1).Health}}{{end}}</strong></div>
+      </div>
+    </div>
+    <div class="enemy-panel" style="display: {{if ge (len .Enemies) 3}}flex{{else}}none{{end}};">
+      <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
+      <div class="enemy-stats">
+        <div>Name: <strong>{{if ge (len .Enemies) 3}}{{(index .Enemies 2).Name}}{{end}}</strong></div>
+        <div>Strength: <strong>{{if ge (len .Enemies) 3}}{{(index .Enemies 2).Strength}}{{end}}</strong></div>
+        <div>Health: <strong>{{if ge (len .Enemies) 3}}{{(index .Enemies 2).Health}}{{end}}</strong></div>
+      </div>
+    </div>
+  </div>
+  <div class="enemy-dice-area" style="{{if .LastEnemyDice}}display: block;{{else}}display: none;{{end}}">
+    <span class="dice-label">Enemy roll</span>
+    <div class="dice-pair enemy-dice">
+      {{if .LastEnemyDice}}
+      <div class="die zx81-die" data-face="{{index .LastEnemyDice 0}}"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      <div class="die zx81-die" data-face="{{index .LastEnemyDice 1}}"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      {{else}}
+      <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      <div class="die zx81-die" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+      {{end}}
+    </div>
+  </div>
+</aside>
+{{end}}

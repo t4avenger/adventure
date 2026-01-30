@@ -2,116 +2,12 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>adventure</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <link rel="stylesheet" href="/static/app.css" />
-  <script>
-    // Global function to update sidebar stats
-    function updateSidebarStats() {
-      // Look for stats-update in the swapped content first, then globally
-      const statsEl = document.querySelector('#game .stats-update') || document.querySelector('.stats-update');
-      if (statsEl) {
-        const strength = statsEl.getAttribute('data-strength');
-        const luck = statsEl.getAttribute('data-luck');
-        const health = statsEl.getAttribute('data-health');
-        const sidebarStrength = document.querySelector('#stat-strength');
-        const sidebarLuck = document.querySelector('#stat-luck');
-        const sidebarHealth = document.querySelector('#stat-health');
-        if (sidebarStrength && strength !== null) sidebarStrength.textContent = strength;
-        if (sidebarLuck && luck !== null) sidebarLuck.textContent = luck;
-        if (sidebarHealth && health !== null) sidebarHealth.textContent = health;
-      }
-    }
-    
-    // Global function to update enemy sidebar (1-3 panels or 1 horde)
-    function updateEnemySidebar() {
-      const gameEl = document.querySelector('#game');
-      const enemyUpdates = gameEl ? gameEl.querySelectorAll('.enemy-update') : document.querySelectorAll('.enemy-update');
-      const enemySidebar = document.querySelector('.enemy-sidebar');
-      
-      if (!enemySidebar) return;
-      
-      enemySidebar.style.display = 'none';
-      const panels = enemySidebar.querySelectorAll('.enemy-panel');
-      panels.forEach(function(p) { p.style.display = 'none'; });
-      
-      const list = [];
-      for (let i = 0; i < enemyUpdates.length; i++) {
-        const el = enemyUpdates[i];
-        const name = (el.getAttribute('data-enemy-name') || '').trim();
-        const strength = parseInt(el.getAttribute('data-enemy-strength') || '0', 10);
-        const health = parseInt(el.getAttribute('data-enemy-health') || '0', 10);
-        if (name !== '' && !isNaN(health) && health > 0) {
-          list.push({ name: name, strength: isNaN(strength) ? 0 : strength, health: health });
-        }
-      }
-      
-      if (list.length > 0) {
-        enemySidebar.classList.add('show');
-        enemySidebar.style.display = 'flex';
-        const showCount = list.length;
-        for (let i = 0; i < panels.length; i++) {
-          const panel = panels[i];
-          if (i < showCount) {
-            panel.style.display = 'flex';
-            const e = list[i];
-            const nameEl = panel.querySelector('.enemy-stats div:first-child strong');
-            const strengthEl = panel.querySelector('.enemy-stats div:nth-child(2) strong');
-            const healthEl = panel.querySelector('.enemy-stats div:nth-child(3) strong');
-            if (nameEl) nameEl.textContent = e.name;
-            if (strengthEl) strengthEl.textContent = String(e.strength);
-            if (healthEl) healthEl.textContent = String(e.health);
-          }
-        }
-      } else {
-        enemySidebar.classList.remove('show');
-      }
-    }
-    
-    // Set up event listeners
-    function initStatsUpdater() {
-      updateSidebarStats();
-      updateEnemySidebar();
-      // Update after HTMX swaps
-      document.body.addEventListener('htmx:afterSwap', function(evt) {
-        // Small delay to ensure DOM is updated
-        setTimeout(function() {
-          updateSidebarStats();
-          updateEnemySidebar();
-        }, 10);
-      });
-    }
-    
-    // Update on initial load (works whether DOM is ready or not)
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initStatsUpdater);
-    } else {
-      initStatsUpdater();
-    }
-    
-    // Also update after a short delay to catch any late-loading content
-    setTimeout(function() {
-      updateSidebarStats();
-      updateEnemySidebar();
-    }, 100);
-  </script>
+  {{template "layout_head.html" .}}
 </head>
 <body>
   <main class="wrap">
     <div class="container">
-      <aside class="sidebar">
-        <div class="character-image">
-          <div class="character-placeholder">Character</div>
-        </div>
-        <div class="character-stats">
-          <div>Strength: <strong id="stat-strength">{{if .State}}{{.State.Stats.Strength}}{{else if .Start}}{{.Start.Stats.Strength}}{{end}}</strong></div>
-          <div>Luck: <strong id="stat-luck">{{if .State}}{{.State.Stats.Luck}}{{else if .Start}}{{.Start.Stats.Luck}}{{end}}</strong></div>
-          <div>Health: <strong id="stat-health">{{if .State}}{{.State.Stats.Health}}{{else if .Start}}{{.Start.Stats.Health}}{{end}}</strong></div>
-        </div>
-      </aside>
-
+      {{template "sidebar_left.html" .}}
       <section id="game" class="main-content">
         {{if .Start}}
             {{template "start.html" .Start}}
@@ -119,35 +15,7 @@
             {{template "game.html" .}}
         {{end}}
       </section>
-
-      <aside class="enemy-sidebar" style="display: none;">
-        <div class="enemy-panels">
-          <div class="enemy-panel">
-            <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
-            <div class="enemy-stats">
-              <div>Name: <strong></strong></div>
-              <div>Strength: <strong></strong></div>
-              <div>Health: <strong></strong></div>
-            </div>
-          </div>
-          <div class="enemy-panel">
-            <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
-            <div class="enemy-stats">
-              <div>Name: <strong></strong></div>
-              <div>Strength: <strong></strong></div>
-              <div>Health: <strong></strong></div>
-            </div>
-          </div>
-          <div class="enemy-panel">
-            <div class="enemy-image"><div class="enemy-placeholder">Enemy</div></div>
-            <div class="enemy-stats">
-              <div>Name: <strong></strong></div>
-              <div>Strength: <strong></strong></div>
-              <div>Health: <strong></strong></div>
-            </div>
-          </div>
-        </div>
-      </aside>
+      {{template "sidebar_right.html" .}}
     </div>
   </main>
 </body>

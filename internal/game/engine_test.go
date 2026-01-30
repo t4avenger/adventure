@@ -182,6 +182,9 @@ func TestApplyChoice_WithCheck(t *testing.T) {
 	if result.LastRoll == nil {
 		t.Error("Expected LastRoll to be set")
 	}
+	if result.LastPlayerDice == nil {
+		t.Error("Expected LastPlayerDice to be set")
+	}
 
 	if result.LastOutcome == nil {
 		t.Error("Expected LastOutcome to be set")
@@ -189,6 +192,9 @@ func TestApplyChoice_WithCheck(t *testing.T) {
 
 	if *result.LastRoll < 2 || *result.LastRoll > 12 {
 		t.Errorf("Expected roll between 2-12, got %d", *result.LastRoll)
+	}
+	if result.LastPlayerDice != nil && result.LastPlayerDice[0]+result.LastPlayerDice[1] != *result.LastRoll {
+		t.Errorf("LastPlayerDice sum %d+%d != LastRoll %d", result.LastPlayerDice[0], result.LastPlayerDice[1], *result.LastRoll)
 	}
 
 	// With luck 12, roll should be <= 12, so should succeed
@@ -466,7 +472,7 @@ func TestResolveBattleRound_HealthNeverNegative(t *testing.T) {
 		EnemyHealth:   3,
 	}
 
-	result, enemyHealth, _, outcome := engine.resolveBattleRound(&player, battle.EnemyStrength, battle.EnemyHealth, 1)
+	result, enemyHealth, _, _, outcome := engine.resolveBattleRound(&player, battle.EnemyStrength, battle.EnemyHealth, 1)
 
 	if result.Stats.Health < MinHealth {
 		t.Errorf("Expected health never below %d, got %d", MinHealth, result.Stats.Health)

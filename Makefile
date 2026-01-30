@@ -1,4 +1,4 @@
-.PHONY: help test lint fmt vet build run clean install-tools
+.PHONY: help test test-js lint lint-js fmt vet build run clean install-tools install-js check
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -47,6 +47,32 @@ test-race: ## Run tests with race detector (requires CGO/gcc)
 
 test-short: ## Run tests without race detection (faster)
 	go test -v ./...
+
+test-js: ## Run JavaScript unit tests (Jest). Run 'make install-js' first if needed.
+	@if ! command -v npm > /dev/null 2>&1; then \
+		echo "npm not found; install Node.js and npm to run JS tests"; exit 1; \
+	fi; \
+	if [ ! -d node_modules ]; then \
+		echo "node_modules not found; run 'make install-js' first"; exit 1; \
+	fi; \
+	npm test
+
+lint-js: ## Run ESLint on static/js. Run 'make install-js' first if needed.
+	@if ! command -v npm > /dev/null 2>&1; then \
+		echo "npm not found; install Node.js and npm to run JS lint"; exit 1; \
+	fi; \
+	if [ ! -d node_modules ]; then \
+		echo "node_modules not found; run 'make install-js' first"; exit 1; \
+	fi; \
+	npm run lint
+
+install-js: ## Install JavaScript dependencies (npm install)
+	@if command -v npm > /dev/null 2>&1; then \
+		npm install; \
+		echo "JS dependencies installed. Run 'npm test' for tests, 'npm run lint' for lint."; \
+	else \
+		echo "npm not found; install Node.js and npm first"; exit 1; \
+	fi
 
 lint: ## Run golangci-lint (requires install-tools)
 	@GOPATH_BIN=$$(go env GOPATH 2>/dev/null || echo "$$HOME/go")/bin; \
@@ -103,4 +129,4 @@ run: ## Run the application
 clean: ## Clean build artifacts
 	rm -rf bin/ coverage.out
 
-check: fmt vet lint test ## Run all checks (format, vet, lint, test)
+check: fmt vet lint test install-js test-js lint-js ## Run all checks (Go + JS: format, vet, lint, test)

@@ -40,7 +40,11 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	st, sessionID := s.getOrCreateState(ctx, w, r)
+	st, sessionID, found := s.getOrCreateState(ctx, w, r)
+	if !found {
+		http.Redirect(w, r, "/start", http.StatusFound)
+		return
+	}
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", 400)
@@ -59,20 +63,21 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := res.ErrorMessage
-	vm, err := s.makeViewModel(&res.State, msg, res.LastRoll, res.LastOutcome)
+	vm, err := s.makeViewModel(&res.State, msg, res.LastRoll, res.LastOutcome, res.LastPlayerDice, res.LastEnemyDice)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	// htmx: return fragment for #game only
-	if err := s.Tmpl.ExecuteTemplate(w, "game.html", vm); err != nil {
+	// htmx: return #game fragment + OOB sidebars; client skips sync and only runs dice animation
+	w.Header().Set("X-Adventure-OOB", "true")
+	if err := s.Tmpl.ExecuteTemplate(w, "game_response.html", vm); err != nil {
 		http.Error(w, "failed to render template", 500)
 		return
 	}
 }
 
-func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) (state game.PlayerState, sessionID string) {
+func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) (state game.PlayerState, sessionID string, found bool) {
 	id := s.sessionID(r)
 	if id == "" {
 		id = s.Store.NewID()
@@ -85,18 +90,17 @@ func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r 
 		})
 		state = game.NewPlayer(s.Engine.Story.Start)
 		_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
-		return state, id
+		return state, id, true
 	}
 
 	var ok bool
 	var err error
 	state, ok, err = s.Store.Get(ctx, id)
 	if err != nil || !ok {
-		// Create new state on store error or missing session
-		state = game.NewPlayer(s.Engine.Story.Start)
-		_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
+		// Session exists but state not found (e.g. store cleared). Caller should redirect to /start.
+		return game.PlayerState{}, id, false
 	}
-	return state, id
+	return state, id, true
 }
 
 func (s *Server) sessionID(r *http.Request) string {
@@ -119,24 +123,28 @@ type ViewModel struct {
 	State              game.PlayerState
 	Message            string
 	LastRoll           *int
+	LastPlayerDice     *[2]int
+	LastEnemyDice      *[2]int
 	LastOutcome        *string
 	Enemies            []game.EnemyState // 1–3 or single horde for display
 	BattleChoicePrefix string            // e.g. "battle" for keys battle:attack:0
 	EffectiveChoices   []BattleChoice    // when in battle, synthetic choices; else nil
 }
 
-func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outcome *string) (ViewModel, error) {
+func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outcome *string, playerDice, enemyDice *[2]int) (ViewModel, error) {
 	n, err := s.Engine.CurrentNode(st)
 	if err != nil {
 		return ViewModel{}, err
 	}
 	vm := ViewModel{
-		Node:        n,
-		State:       *st,
-		Message:     msg,
-		LastRoll:    roll,
-		LastOutcome: outcome,
-		Enemies:     st.Enemies,
+		Node:           n,
+		State:          *st,
+		Message:        msg,
+		LastRoll:       roll,
+		LastPlayerDice: playerDice,
+		LastEnemyDice:  enemyDice,
+		LastOutcome:    outcome,
+		Enemies:        st.Enemies,
 	}
 	if len(st.Enemies) > 0 {
 		var battleKey string

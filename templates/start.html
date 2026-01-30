@@ -3,6 +3,7 @@
   <div class="story-content">
     <h2>Create Your Adventurer</h2>
     <div class="stats-update" data-strength="{{.Stats.Strength}}" data-luck="{{.Stats.Luck}}" data-health="{{.Stats.Health}}" style="display: none;"></div>
+    <div class="stat-rolls" data-strength-dice1="{{index .StrengthDice 0}}" data-strength-dice2="{{index .StrengthDice 1}}" data-luck-dice1="{{index .LuckDice 0}}" data-luck-dice2="{{index .LuckDice 1}}" data-health-dice1="{{index .HealthDice 0}}" data-health-dice2="{{index .HealthDice 1}}" style="display: none;"></div>
     <div class="enemy-update" data-enemy-name="" data-enemy-strength="" data-enemy-health="0" style="display: none;"></div>
   </div>
 </div>
@@ -16,12 +17,10 @@
     Reroll Stats
     </button>
 
-    <button class="btn primary"
-    hx-post="/begin"
-    hx-target="#game"
-    hx-swap="innerHTML">
-    Begin Adventure
-    </button>
+    <form hx-post="/begin" hx-target="#game" hx-swap="innerHTML" class="begin-form">
+      <input type="hidden" name="session_id" value="{{.SessionID}}">
+      <button type="submit" class="btn primary">Begin Adventure</button>
+    </form>
   </div>
 </div>
 {{end}}
