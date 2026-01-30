@@ -22,7 +22,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
 
     - name: Verify Go dependencies
       run: go mod verify
@@ -31,7 +30,7 @@ jobs:
       run: go mod download
 
     - name: Install JavaScript dependencies
-      run: npm ci
+      run: npm install
 
     - name: Check Go formatting
       run: |
