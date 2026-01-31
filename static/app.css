@@ -187,6 +187,19 @@ html, body {
 .character-stats div { font-size: 0.95rem; }
 .character-stats strong { color: #ffcc66; font-weight: 600; }
 
+#sidebar-left .map-link {
+  margin: 0;
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+#sidebar-left .map-link a {
+  color: #00cc00;
+  text-decoration: none;
+}
+#sidebar-left .map-link a:hover {
+  text-decoration: underline;
+}
+
 /* ZX81-style dice: blocky, green on black */
 .player-dice-area,
 .enemy-dice-area {

@@ -17,13 +17,14 @@ type EnemyState struct {
 // PlayerState tracks the current game state for a player, including
 // their location, stats, flags, and any active enemies in combat.
 type PlayerState struct {
-	NodeID  string
-	StoryID string // adventure ID e.g. "demo"
-	Name    string // character display name
-	Avatar  string // avatar ID e.g. "male_young"
-	Stats   Stats
-	Flags   map[string]bool
-	Enemies []EnemyState // 1–3 shown individually; 4+ stored as one "Horde" entry
+	NodeID       string
+	StoryID      string // adventure ID e.g. "demo"
+	Name         string // character display name
+	Avatar       string // avatar ID e.g. "male_young"
+	Stats        Stats
+	Flags        map[string]bool
+	Enemies      []EnemyState // 1–3 shown individually; 4+ stored as one "Horde" entry
+	VisitedNodes []string     // node IDs in order visited (for treasure map)
 }
 
 // Story represents a complete adventure story with nodes and choices.

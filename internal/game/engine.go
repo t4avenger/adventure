@@ -128,7 +128,8 @@ func NewPlayer(storyID, startNodeID string) PlayerState {
 			Luck:     7,
 			Health:   12,
 		},
-		Flags: map[string]bool{},
+		Flags:        map[string]bool{},
+		VisitedNodes: []string{startNodeID},
 	}
 }
 
@@ -235,6 +236,12 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 
 	oldNodeID := st.NodeID
 	st.NodeID = next
+	if st.VisitedNodes == nil {
+		st.VisitedNodes = []string{}
+	}
+	if st.NodeID != oldNodeID {
+		st.VisitedNodes = append(st.VisitedNodes, st.NodeID)
+	}
 
 	// Apply destination node effects on entry, but avoid re-applying the same
 	// node's effects when we intentionally stay on the same node (e.g. during
@@ -253,6 +260,9 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 		st.Stats.Health = MinHealth
 		if s != nil {
 			if _, ok := s.Nodes[DeathNodeID]; ok {
+				if st.NodeID != DeathNodeID {
+					st.VisitedNodes = append(st.VisitedNodes, DeathNodeID)
+				}
 				st.NodeID = DeathNodeID
 			}
 		}
