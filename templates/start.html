@@ -1,26 +1,51 @@
 {{define "start.html"}}
-<div class="story-area">
-  <div class="story-content">
-    <h2>Create Your Adventurer</h2>
-    <div class="stats-update" data-strength="{{.Stats.Strength}}" data-luck="{{.Stats.Luck}}" data-health="{{.Stats.Health}}" style="display: none;"></div>
-    <div class="stat-rolls" data-strength-dice1="{{index .StrengthDice 0}}" data-strength-dice2="{{index .StrengthDice 1}}" data-luck-dice1="{{index .LuckDice 0}}" data-luck-dice2="{{index .LuckDice 1}}" data-health-dice1="{{index .HealthDice 0}}" data-health-dice2="{{index .HealthDice 1}}" style="display: none;"></div>
-    <div class="enemy-update" data-enemy-name="" data-enemy-strength="" data-enemy-health="0" style="display: none;"></div>
+<form hx-post="/begin" hx-target="#game" hx-swap="innerHTML" class="begin-form" id="begin-form">
+  <input type="hidden" name="session_id" value="{{.SessionID}}">
+  <div class="story-area">
+    <div class="story-content character-create-content">
+      <h2>Create Your Adventurer</h2>
+      {{if .AdventureOptions}}
+      <div class="adventure-select">
+        <label class="adventure-select-label" for="adventure">Adventure</label>
+        <select id="adventure" name="story_id" class="adventure-select-input">
+          {{range .AdventureOptions}}
+          <option value="{{.ID}}" {{if eq $.StoryID .ID}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+      </div>
+      {{end}}
+      <div class="character-create">
+        <label class="character-name-label" for="character-name">Name</label>
+        <input id="character-name" type="text" name="name" value="{{.Name}}" placeholder="Adventurer" maxlength="64" class="character-name-input">
+      </div>
+      <div class="avatar-select">
+        <span class="avatar-select-label">Portrait</span>
+        <div class="avatar-options">
+          {{range .AvatarOptions}}
+          <label class="avatar-option">
+            <input type="radio" name="avatar" value="{{.}}" {{if eq $.Avatar .}}checked{{end}}>
+            <div class="avatar avatar-{{.}} avatar-preview"></div>
+          </label>
+          {{end}}
+        </div>
+      </div>
+      <div class="stats-update" data-strength="{{.Stats.Strength}}" data-luck="{{.Stats.Luck}}" data-health="{{.Stats.Health}}" style="display: none;"></div>
+      <div class="stat-rolls" data-strength-dice1="{{index .StrengthDice 0}}" data-strength-dice2="{{index .StrengthDice 1}}" data-luck-dice1="{{index .LuckDice 0}}" data-luck-dice2="{{index .LuckDice 1}}" data-health-dice1="{{index .HealthDice 0}}" data-health-dice2="{{index .HealthDice 1}}" style="display: none;"></div>
+      <div class="enemy-update" data-enemy-name="" data-enemy-strength="" data-enemy-health="0" style="display: none;"></div>
+    </div>
   </div>
-</div>
 
-<div class="choices-area">
-  <div class="actions">
-    <button class="btn"
-    hx-post="/reroll"
-    hx-target="#game"
-    hx-swap="innerHTML">
-    Reroll Stats
-    </button>
-
-    <form hx-post="/begin" hx-target="#game" hx-swap="innerHTML" class="begin-form">
-      <input type="hidden" name="session_id" value="{{.SessionID}}">
+  <div class="choices-area">
+    <div class="actions">
+      <button type="button" class="btn"
+        hx-post="/reroll"
+        hx-target="#game"
+        hx-swap="innerHTML"
+        hx-include="closest form">
+        Reroll Stats
+      </button>
       <button type="submit" class="btn primary">Begin Adventure</button>
-    </form>
+    </div>
   </div>
-</div>
+</form>
 {{end}}

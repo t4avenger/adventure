@@ -1,7 +1,15 @@
 {{define "sidebar_left.html"}}
 <aside id="sidebar-left" class="sidebar">
   <div class="character-image">
+    {{if .State}}
+    <div class="avatar avatar-{{.State.Avatar}}"></div>
+    <div class="character-name">{{if .State.Name}}{{.State.Name}}{{else}}Adventurer{{end}}</div>
+    {{else if .Start}}
+    <div class="avatar avatar-{{.Start.Avatar}}"></div>
+    <div class="character-name">{{if .Start.Name}}{{.Start.Name}}{{else}}Adventurer{{end}}</div>
+    {{else}}
     <div class="character-placeholder">Character</div>
+    {{end}}
   </div>
   <div class="character-stats">
     <div>Strength: <strong id="stat-strength">{{if .State}}{{.State.Stats.Strength}}{{else if .Start}}{{.Start.Stats.Strength}}{{end}}</strong></div>

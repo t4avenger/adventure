@@ -1,7 +1,8 @@
 {{define "sidebar_left_oob.html"}}
 <aside id="sidebar-left" class="sidebar" hx-swap-oob="true">
   <div class="character-image">
-    <div class="character-placeholder">Character</div>
+    <div class="avatar avatar-{{.State.Avatar}}"></div>
+    <div class="character-name">{{if .State.Name}}{{.State.Name}}{{else}}Adventurer{{end}}</div>
   </div>
   <div class="character-stats">
     <div>Strength: <strong id="stat-strength">{{.State.Stats.Strength}}</strong></div>
