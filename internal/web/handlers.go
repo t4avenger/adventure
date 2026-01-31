@@ -30,6 +30,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/begin", s.handleBegin)
 
 	mux.HandleFunc("/play", s.handlePlay)
+	mux.HandleFunc("/scenery/", s.handleScenery)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	return mux
 }

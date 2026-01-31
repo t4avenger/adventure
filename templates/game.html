@@ -12,22 +12,19 @@
   <div class="enemy-update" data-enemy-name="" data-enemy-strength="0" data-enemy-health="0" style="display: none;"></div>
   {{end}}
 
-  <div class="story-area">
-    <div class="story-content">
+  <div class="story-area story-area-game">
+    <div class="scenery {{if .Node.Scenery}}scenery-{{.Node.Scenery}}{{else}}scenery-default{{end}} {{if .Node.EntryAnimation}}entry-animation-{{.Node.EntryAnimation}}{{end}}" data-scenery="{{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}" role="img" aria-label="Scenery: {{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}">
+      <img src="/scenery/{{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}.png?v=2" alt="" class="scenery-img" onerror="this.remove()">
+    </div>
+    <div class="story-text-strip">
       {{if .Message}}<p class="msg">{{.Message}}</p>{{end}}
-
       {{if .LastRoll}}
         <p class="roll">Roll: <strong>{{.LastRoll}}</strong> {{if .LastOutcome}}({{.LastOutcome}}){{end}}</p>
       {{end}}
-
       <p class="text">{{.Node.Text}}</p>
-
       {{if .Node.Ending}}
         <p class="end">— The End —</p>
       {{end}}
-
-      <!-- Placeholder for future images/animations -->
-      <div class="story-media"></div>
     </div>
   </div>
 

@@ -1,4 +1,6 @@
-.PHONY: help test test-js lint lint-js fmt vet build run clean install-tools install-js check
+COVERAGE_MIN := 75
+
+.PHONY: help test test-js lint lint-js fmt vet build run clean install-tools install-js check coverage-check
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -38,15 +40,22 @@ test: ## Run all tests (with race detection if CGO is available)
 	@echo ""
 	@echo "Coverage report:"
 	@go tool cover -func=coverage.out
+	@go tool cover -func=coverage.out | grep '^total:' | awk -v min=$(COVERAGE_MIN) '/^total:/ { gsub(/%/,""); pct=$$3+0; if (pct < min) { print "*** Coverage " pct "% is below minimum " min "% ***"; exit 1 } }'
 
 test-race: ## Run tests with race detector (requires CGO/gcc)
 	CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ./...
 	@echo ""
 	@echo "Coverage report:"
-	go tool cover -func=coverage.out
+	@go tool cover -func=coverage.out
+	@go tool cover -func=coverage.out | grep '^total:' | awk -v min=$(COVERAGE_MIN) '/^total:/ { gsub(/%/,""); pct=$$3+0; if (pct < min) { print "*** Coverage " pct "% is below minimum " min "% ***"; exit 1 } }'
 
 test-short: ## Run tests without race detection (faster)
 	go test -v ./...
+
+coverage-check: ## Fail if coverage.out total is below COVERAGE_MIN (default 75%%)
+	@test -f coverage.out || (echo "Run 'make test' first to generate coverage.out"; exit 1)
+	@go tool cover -func=coverage.out | grep '^total:' | awk -v min=$(COVERAGE_MIN) '/^total:/ { gsub(/%/,""); pct=$$3+0; if (pct < min) { print "*** Coverage " pct "% is below minimum " min "% ***"; exit 1 } }'
+	@echo "Coverage meets minimum $(COVERAGE_MIN)%"
 
 test-js: ## Run JavaScript unit tests (Jest). Run 'make install-js' first if needed.
 	@if ! command -v npm > /dev/null 2>&1; then \
