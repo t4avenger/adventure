@@ -16,6 +16,7 @@ alwaysApply: true
 
 - **Go**: When changing game logic, handlers, or session behaviour, add or update tests in the matching `*_test.go` (e.g. `internal/game/engine_test.go`, `internal/web/` if needed).
 - **JavaScript**: When changing `static/js/app.js` (sidebar sync, dice, HTMX glue), add or update tests in `static/js/app.test.js`. Run `make test-js` or `npm test`.
+- **Coverage**: Go test coverage must not drop below **75%** (run `go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out`). Add or update tests when adding handlers, engine logic, or session behaviour so that total coverage stays at or above 75%.
 
 ## Docs and tooling
 

@@ -271,6 +271,12 @@ html, body {
   flex-direction: column;
   min-height: calc(100vh - 32px);
 }
+#game-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 .enemy-sidebar {
   display: none;
   flex-direction: column;
@@ -329,6 +335,30 @@ html, body {
   overflow-y: auto;
   padding: 20px;
 }
+.story-area-game {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.story-text-strip {
+  flex-shrink: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 16px 20px;
+  background: #0a0a0a;
+  border-top: 1px solid #1a3d1a;
+  text-align: center;
+}
+.story-text-strip .text {
+  margin: 8px 0;
+}
+.story-text-strip .msg,
+.story-text-strip .roll,
+.story-text-strip .end {
+  margin: 4px 0;
+}
 .story-content {
   flex: 1;
   display: flex;
@@ -384,6 +414,101 @@ html, body {
   margin-top: 20px;
   /* Placeholder for future images/animations */
 }
+
+/* ZX81-style scenery: fills story area, green-on-black blocky look */
+.scenery {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-height: 240px;
+  border: 2px solid #2d6b2d;
+  border-radius: 0;
+  background-color: #0d1a0d;
+}
+.scenery .scenery-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.scenery-default {
+  background: #0d1a0d radial-gradient(ellipse 80% 60% at 50% 80%, #1e4d1e 0%, #0d2810 60%);
+}
+/* Forest: visible green base + vertical "tree" stripes */
+.scenery-forest {
+  background:
+    linear-gradient(90deg, transparent 0%, transparent 14%, #1e4d1e 14%, #1e4d1e 18%, transparent 18%, transparent 32%, #1a4520 32%, #1a4520 36%, transparent 36%, transparent 50%, #225522 50%, #225522 54%, transparent 54%, transparent 68%, #1a4520 68%, #1a4520 72%, transparent 72%, transparent 86%, #1e4d1e 86%, #1e4d1e 90%, transparent 90%),
+    linear-gradient(180deg, #0d2010 0%, #1a3d1a 30%, #0d2410 100%);
+  box-shadow: inset 0 0 80px rgba(0, 80, 0, 0.25);
+}
+.scenery-river {
+  background:
+    linear-gradient(180deg, #0d2010 0%, #1a3540 35%, #1e4048 50%, #1a3540 65%, #0d2010 100%);
+  box-shadow: inset 0 0 60px rgba(0, 70, 60, 0.2);
+}
+.scenery-hills {
+  background: linear-gradient(180deg, #225522 0%, #1a3d1a 25%, #0d2810 50%, #1a3d1a 75%, #0d1a0d 100%);
+  box-shadow: inset 0 0 60px rgba(0, 80, 0, 0.22);
+}
+.scenery-town {
+  background: linear-gradient(180deg, #0d1a0d 0%, #1e3520 45%, #0d2010 100%);
+  box-shadow: inset 0 0 80px rgba(40, 60, 40, 0.15);
+}
+.scenery-village {
+  background: linear-gradient(180deg, #1a3520 0%, #0d2010 70%);
+  box-shadow: inset 0 0 50px rgba(0, 60, 0, 0.15);
+}
+/* Road: darker sides, lighter path band through middle */
+.scenery-road {
+  background:
+    linear-gradient(180deg, #0d1a0d 0%, #0d1a0d 32%, #225522 38%, #2a652a 50%, #225522 62%, #0d1a0d 68%, #0d1a0d 100%),
+    linear-gradient(180deg, #0d2010 0%, #152a18 100%);
+  box-shadow: inset 0 0 40px rgba(0, 50, 0, 0.15);
+}
+/* Shore: horizontal band for sand/water */
+.scenery-shore {
+  background:
+    linear-gradient(180deg, #0d1a0d 0%, #1a2d2a 28%, #1e3532 42%, #1a3028 55%, #1a2d2a 72%, #0d1a0d 100%);
+  box-shadow: inset 0 0 60px rgba(0, 60, 50, 0.2);
+}
+.scenery-bridge {
+  background: linear-gradient(180deg, #0d1a0d 0%, #1a3528 40%, #225532 50%, #1a3528 60%, #0d1a0d 100%);
+  box-shadow: inset 0 0 50px rgba(0, 60, 50, 0.15);
+}
+/* Clearing: brighter central "sky" patch */
+.scenery-clearing {
+  background: radial-gradient(ellipse 120% 90% at 50% 85%, #2a5a2a 0%, #1a4520 35%, #0d2810 70%);
+  box-shadow: inset 0 0 100px rgba(0, 100, 0, 0.3);
+}
+.scenery-house_inside {
+  background: linear-gradient(180deg, #0d0d0d 0%, #1e2a1e 30%, #0d150d 100%);
+  box-shadow: inset 0 0 100px rgba(30, 45, 30, 0.15);
+}
+.scenery-castle_inside {
+  background: linear-gradient(180deg, #0d0d0d 0%, #1a1e18 35%, #0d0d0d 100%);
+  box-shadow: inset 0 0 80px rgba(35, 40, 30, 0.18);
+}
+.scenery-cave {
+  background: linear-gradient(180deg, #080808 0%, #0d1810 50%, #080a08 100%);
+  box-shadow: inset 0 0 100px rgba(0, 30, 0, 0.12);
+}
+.scenery-dungeon {
+  background: linear-gradient(180deg, #060606 0%, #0d120d 50%, #060606 100%);
+  box-shadow: inset 0 0 80px rgba(0, 25, 0, 0.1);
+}
+
+/* Entry animation: door opening (runs once on node entry) */
+@keyframes doorOpen {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+.entry-animation-door_open {
+  animation: doorOpen 0.5s ease-out 1 forwards;
+}
+
 .choices-area {
   padding: 20px;
   display: flex;

@@ -35,10 +35,12 @@ type Story struct {
 
 // Node represents a single location or scene in the adventure.
 type Node struct {
-	Text    string   `yaml:"text"`
-	Choices []Choice `yaml:"choices"`
-	Effects []Effect `yaml:"effects"`
-	Ending  bool     `yaml:"ending"`
+	Text           string   `yaml:"text"`
+	Scenery        string   `yaml:"scenery"`         // scenery ID e.g. "forest", "cave"; empty = default
+	EntryAnimation string   `yaml:"entry_animation"` // e.g. "door_open"; empty = none
+	Choices        []Choice `yaml:"choices"`
+	Effects        []Effect `yaml:"effects"`
+	Ending         bool     `yaml:"ending"`
 }
 
 // Choice represents a player action available at a node.

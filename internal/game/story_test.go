@@ -6,14 +6,16 @@ import (
 	"testing"
 )
 
+const testStartNode = "node1"
+
 func TestLoadStory_Valid(t *testing.T) {
 	// Create a temporary YAML file
 	tmpDir := t.TempDir()
 	storyPath := filepath.Join(tmpDir, "test_story.yaml")
 
-	storyYAML := `start: "node1"
+	storyYAML := `start: "` + testStartNode + `"
 nodes:
-  node1:
+  ` + testStartNode + `:
     text: "First node"
     choices:
       - key: "next"
@@ -34,15 +36,15 @@ nodes:
 		t.Fatalf("Unexpected error loading story: %v", err)
 	}
 
-	if story.Start != "node1" {
-		t.Errorf("Expected start node 'node1', got '%s'", story.Start)
+	if story.Start != testStartNode {
+		t.Errorf("Expected start node %q, got %q", testStartNode, story.Start)
 	}
 
 	if story.Nodes == nil {
 		t.Fatal("Expected nodes map to be initialized")
 	}
 
-	node1, ok := story.Nodes["node1"]
+	node1, ok := story.Nodes[testStartNode]
 	if !ok {
 		t.Fatal("Expected node1 to exist")
 	}
@@ -80,9 +82,9 @@ func TestLoadStory_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	storyPath := filepath.Join(tmpDir, "invalid.yaml")
 
-	invalidYAML := `start: "node1"
+	invalidYAML := `start: "` + testStartNode + `"
 nodes:
-  node1:
+  ` + testStartNode + `:
     text: "First node"
     invalid: [unclosed bracket
 `
@@ -149,5 +151,108 @@ nodes:
 	}
 	if effect.ClampMax == nil || *effect.ClampMax != 12 {
 		t.Errorf("Expected clampMax 12, got %v", effect.ClampMax)
+	}
+}
+
+func TestLoadStory_SceneryAndEntryAnimation(t *testing.T) {
+	tmpDir := t.TempDir()
+	storyPath := filepath.Join(tmpDir, "scenery_story.yaml")
+
+	storyYAML := `start: "outside"
+nodes:
+  outside:
+    text: "You stand before a door."
+    scenery: "forest"
+    choices:
+      - key: "enter"
+        text: "Go inside"
+        next: "inside"
+  inside:
+    text: "You step inside."
+    scenery: "house_inside"
+    entry_animation: "door_open"
+    ending: true
+`
+
+	err := os.WriteFile(storyPath, []byte(storyYAML), 0o600) //nolint:gosec // test file permissions are acceptable
+	if err != nil {
+		t.Fatalf("Failed to create test story file: %v", err)
+	}
+
+	story, err := LoadStory(storyPath)
+	if err != nil {
+		t.Fatalf("Unexpected error loading story: %v", err)
+	}
+
+	outside := story.Nodes["outside"]
+	if outside == nil {
+		t.Fatal("Expected outside node to exist")
+	}
+	if outside.Scenery != "forest" {
+		t.Errorf("Expected scenery 'forest', got %q", outside.Scenery)
+	}
+	if outside.EntryAnimation != "" {
+		t.Errorf("Expected no entry_animation on outside, got %q", outside.EntryAnimation)
+	}
+
+	inside := story.Nodes["inside"]
+	if inside == nil {
+		t.Fatal("Expected inside node to exist")
+	}
+	if inside.Scenery != "house_inside" {
+		t.Errorf("Expected scenery 'house_inside', got %q", inside.Scenery)
+	}
+	if inside.EntryAnimation != "door_open" {
+		t.Errorf("Expected entry_animation 'door_open', got %q", inside.EntryAnimation)
+	}
+}
+
+func TestLoadStories(t *testing.T) {
+	tmpDir := t.TempDir()
+	storyYAML := `start: "` + testStartNode + `"
+nodes:
+  ` + testStartNode + `:
+    text: "First"
+    ending: true
+`
+	err := os.WriteFile(filepath.Join(tmpDir, "one.yaml"), []byte(storyYAML), 0o600) //nolint:gosec // test dir path from t.TempDir()
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(tmpDir, "readme.txt"), []byte("not yaml"), 0o600) //nolint:gosec // test dir path from t.TempDir()
+	if err != nil {
+		t.Fatalf("Failed to create readme: %v", err)
+	}
+
+	stories, err := LoadStories(tmpDir)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(stories) != 1 {
+		t.Errorf("Expected 1 story, got %d", len(stories))
+	}
+	if stories["one"] == nil {
+		t.Fatal("Expected story 'one' to exist")
+	}
+	if stories["one"].Start != testStartNode {
+		t.Errorf("Expected start 'node1', got %q", stories["one"].Start)
+	}
+}
+
+func TestLoadStories_EmptyDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	stories, err := LoadStories(tmpDir)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(stories) != 0 {
+		t.Errorf("Expected 0 stories, got %d", len(stories))
+	}
+}
+
+func TestLoadStories_InvalidDir(t *testing.T) {
+	_, err := LoadStories("nonexistent_directory_xyz")
+	if err == nil {
+		t.Error("Expected error for nonexistent directory")
 	}
 }

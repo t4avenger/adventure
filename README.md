@@ -292,6 +292,49 @@ effects:
     clampMin: 1       # Optional: minimum value
 ```
 
+### Scenery and animations
+
+Each node can optionally set a **scenery** ID so the story area shows a matching backdrop. Story text appears in a strip along the bottom and scrolls when long.
+
+**Scenery images**: The game requests `/scenery/{id}.png` for each scenery ID. If you place a PNG in `static/scenery/{id}.png` (e.g. `static/scenery/forest.png`), that image is used. Otherwise the server generates a ZX81-style blocky image (green on black, 320×200) so every location has a visible graphic without external assets.
+
+**Scenery IDs** (omit or use `default` for no specific scenery):
+
+| Outside | Inside |
+|---------|--------|
+| `forest` | `house_inside` |
+| `river` | `castle_inside` |
+| `hills` | `cave` |
+| `town` | `dungeon` |
+| `village` | |
+| `road` | |
+| `shore` | |
+| `bridge` | |
+| `clearing` | |
+
+**Entry animations**: Optional `entry_animation` plays when entering the node (e.g. going through a door):
+
+- `door_open` — short “door opening” effect when entering an interior
+
+**Example:**
+
+```yaml
+nodes:
+  camp:
+    text: "You wake at the edge of a quiet camp."
+    scenery: "clearing"
+    choices: [...]
+  forest:
+    text: "The forest is cold and still."
+    scenery: "forest"
+    choices: [...]
+  cottage_inside:
+    text: "You step inside. The door swings shut."
+    scenery: "house_inside"
+    entry_animation: "door_open"
+    choices: [...]
+```
+
 ## Development
 
 ### Adding New Features

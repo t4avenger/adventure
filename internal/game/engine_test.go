@@ -42,6 +42,17 @@ func TestNewPlayer(t *testing.T) {
 	}
 }
 
+func TestHasEnemies(t *testing.T) {
+	player := NewPlayer("test", "start")
+	if player.HasEnemies() {
+		t.Error("Expected HasEnemies false for new player")
+	}
+	player.Enemies = []EnemyState{{Name: "Goblin", Strength: 8, Health: 3}}
+	if !player.HasEnemies() {
+		t.Error("Expected HasEnemies true when Enemies non-empty")
+	}
+}
+
 func TestCurrentNode(t *testing.T) {
 	story := &Story{
 		Start: "node1",

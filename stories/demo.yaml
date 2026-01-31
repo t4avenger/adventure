@@ -3,6 +3,7 @@ start: "camp"
 nodes:
   camp:
     text: "You wake at the edge of a quiet camp. The woods watch you."
+    scenery: "clearing"
     choices:
       - key: "north"
         text: "Head north into the trees"
@@ -28,6 +29,7 @@ nodes:
 
   forest:
     text: "The forest is cold and still. A shadow moves."
+    scenery: "forest"
     choices:
       - key: "sneak"
         text: "Try to sneak past (2d6 <= Luck)"
@@ -51,10 +53,12 @@ nodes:
 
   clearing:
     text: "You reach a moonlit clearing. For now, you're safe. (END)"
+    scenery: "clearing"
     ending: true
 
   ambush:
     text: "A creature lunges from the dark! You take 2 damage. (END)"
+    scenery: "forest"
     effects:
       - op: "add"
         stat: "health"
@@ -63,6 +67,7 @@ nodes:
 
   road:
     text: "On the road, a goblin blocks your path, snarling as it draws a rusty blade."
+    scenery: "road"
     choices:
       - key: "fight"
         text: "Attack the goblin (Strength + 2d6)"
@@ -94,6 +99,7 @@ nodes:
 
   road_three:
     text: "Two foes block the path: a goblin and an orc. Choose who to attack."
+    scenery: "road"
     choices:
       - key: "battle"
         text: "Fight"
@@ -111,6 +117,7 @@ nodes:
 
   road_horde:
     text: "A pack of creatures swarms the road. You face a horde."
+    scenery: "road"
     choices:
       - key: "battle"
         text: "Fight"
@@ -134,6 +141,7 @@ nodes:
 
   band_victory:
     text: "You cut down the band. The road is clear."
+    scenery: "road"
     effects:
       - op: "add"
         stat: "luck"
@@ -142,10 +150,12 @@ nodes:
 
   horde_victory:
     text: "The horde breaks. You stand victorious."
+    scenery: "road"
     ending: true
 
   goblin_victory:
     text: "You cut the goblin down. The road is clear, and you feel a little luckier."
+    scenery: "road"
     effects:
       - op: "add"
         stat: "luck"
@@ -154,6 +164,7 @@ nodes:
 
   goblin_defeat:
     text: "Blows rain down until the world fades. You stagger away, badly hurt."
+    scenery: "road"
     effects:
       - op: "add"
         stat: "health"
@@ -162,4 +173,5 @@ nodes:
 
   death:
     text: "Your wounds are too great. Darkness closes in and your adventure ends here."
+    scenery: "forest"
     ending: true

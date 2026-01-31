@@ -4,6 +4,7 @@ start: "beach"
 nodes:
   beach:
     text: "You stand on a windswept shore. Waves crash; a path leads inland."
+    scenery: "shore"
     choices:
       - key: "inland"
         text: "Walk inland towards the trees"
@@ -22,6 +23,7 @@ nodes:
 
   cliff:
     text: "The path climbs to a cliff. Below, the sea; ahead, a narrow bridge."
+    scenery: "bridge"
     choices:
       - key: "cross"
         text: "Cross the bridge (2d6 <= Luck)"
@@ -37,10 +39,12 @@ nodes:
 
   other_side:
     text: "You reach the far side. The adventure continues. (END)"
+    scenery: "hills"
     ending: true
 
   fall:
     text: "The bridge gives way. You fall. (END)"
+    scenery: "bridge"
     effects:
       - op: "add"
         stat: "health"
@@ -49,6 +53,7 @@ nodes:
 
   cove:
     text: "A hidden cove. A small boat is drawn up on the sand."
+    scenery: "shore"
     choices:
       - key: "boat"
         text: "Take the boat"
@@ -59,8 +64,10 @@ nodes:
 
   sail:
     text: "You push off. The shore fades behind you. (END)"
+    scenery: "shore"
     ending: true
 
   death:
     text: "Your wounds are too great. The waves take you."
+    scenery: "shore"
     ending: true
