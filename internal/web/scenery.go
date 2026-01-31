@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -38,8 +39,15 @@ func (s *Server) handleScenery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Prefer static file if it exists (so users can drop in PNGs).
-	staticPath := "static/scenery/" + id + ".png"      // id is allowlisted above
-	if b, err := os.ReadFile(staticPath); err == nil { //nolint:gosec // G304: path built from allowlisted id only
+	// Build path under static/scenery and verify no path traversal (CodeQL / G304).
+	baseDir := filepath.Join("static", "scenery")
+	staticPath := filepath.Clean(filepath.Join(baseDir, id+".png"))
+	rel, err := filepath.Rel(baseDir, staticPath)
+	if err != nil || strings.Contains(rel, "..") {
+		http.NotFound(w, r)
+		return
+	}
+	if b, err := os.ReadFile(staticPath); err == nil {
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 		if _, err := w.Write(b); err != nil {
