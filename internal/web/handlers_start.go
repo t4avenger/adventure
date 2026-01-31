@@ -228,11 +228,13 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 	if s.Engine.Stories[storyID] != nil {
 		st.StoryID = storyID
 		st.NodeID = s.Engine.Stories[storyID].Start
+		st.VisitedNodes = []string{st.NodeID}
 	} else {
 		defaultID := s.defaultStoryID()
 		if s.Engine.Stories[defaultID] != nil {
 			st.StoryID = defaultID
 			st.NodeID = s.Engine.Stories[defaultID].Start
+			st.VisitedNodes = []string{st.NodeID}
 		}
 	}
 	name := strings.TrimSpace(r.FormValue("name"))

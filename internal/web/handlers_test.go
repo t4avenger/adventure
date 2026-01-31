@@ -244,3 +244,43 @@ func TestHandlePlay_ApplyChoiceError(t *testing.T) {
 		t.Error("Expected error message about invalid choice")
 	}
 }
+
+func TestHandleMap_NoSession_RedirectsToStart(t *testing.T) {
+	srv := testServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/map", http.NoBody)
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Errorf("GET /map no session: expected 302, got %d", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != pathStart {
+		t.Errorf("GET /map no session: expected Location %s, got %q", pathStart, loc)
+	}
+}
+
+func TestHandleMap_ReturnsPDF(t *testing.T) {
+	srv := testServer(t)
+	ctx := context.Background()
+	st := game.NewPlayer(testStoryID, "start")
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/map", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("GET /map: expected 200, got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/pdf" {
+		t.Errorf("GET /map: expected Content-Type application/pdf, got %q", ct)
+	}
+	body := rec.Body.Bytes()
+	if len(body) < 8 {
+		t.Errorf("GET /map: body too short")
+	}
+	if !strings.HasPrefix(string(body), "%PDF") {
+		t.Error("GET /map: body is not a PDF (missing %PDF header)")
+	}
+}

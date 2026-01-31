@@ -220,6 +220,10 @@ Battles continue round-by-round until:
 - Player is routed to the `death` node if it exists in the story
 - Game can be restarted from the death screen
 
+### Printable map
+
+- During play, use **Download map** to get a PDF map of the current adventure (all locations and paths, with your current location marked). The map uses an old-map style and is intended for printing. The route is `GET /map`; the same session cookie as play is used.
+
 ## Story Format
 
 Stories are defined in YAML format. See `stories/demo.yaml` for a complete example.
