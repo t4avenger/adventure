@@ -1,0 +1,66 @@
+title: "The Shore"
+start: "beach"
+
+nodes:
+  beach:
+    text: "You stand on a windswept shore. Waves crash; a path leads inland."
+    choices:
+      - key: "inland"
+        text: "Walk inland towards the trees"
+        next: "cliff"
+      - key: "shore"
+        text: "Follow the beach east"
+        next: "cove"
+      - key: "rest"
+        text: "Rest on the sand (+1 Health, max 12)"
+        effects:
+          - op: "add"
+            stat: "health"
+            value: 1
+            clampMax: 12
+        next: "beach"
+
+  cliff:
+    text: "The path climbs to a cliff. Below, the sea; ahead, a narrow bridge."
+    choices:
+      - key: "cross"
+        text: "Cross the bridge (2d6 <= Luck)"
+        check:
+          stat: "luck"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "other_side"
+        onFailureNext: "fall"
+      - key: "back"
+        text: "Return to the beach"
+        next: "beach"
+
+  other_side:
+    text: "You reach the far side. The adventure continues. (END)"
+    ending: true
+
+  fall:
+    text: "The bridge gives way. You fall. (END)"
+    effects:
+      - op: "add"
+        stat: "health"
+        value: -2
+    ending: true
+
+  cove:
+    text: "A hidden cove. A small boat is drawn up on the sand."
+    choices:
+      - key: "boat"
+        text: "Take the boat"
+        next: "sail"
+      - key: "back"
+        text: "Return to the beach"
+        next: "beach"
+
+  sail:
+    text: "You push off. The shore fades behind you. (END)"
+    ending: true
+
+  death:
+    text: "Your wounds are too great. The waves take you."
+    ending: true

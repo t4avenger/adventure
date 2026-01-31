@@ -7,11 +7,15 @@ import (
 const safeNodeID = "safe"
 
 func TestNewPlayer(t *testing.T) {
+	storyID := "test"
 	start := "test_node"
-	player := NewPlayer(start)
+	player := NewPlayer(storyID, start)
 
 	if player.NodeID != start {
 		t.Errorf("Expected NodeID %s, got %s", start, player.NodeID)
+	}
+	if player.StoryID != storyID {
+		t.Errorf("Expected StoryID %s, got %s", storyID, player.StoryID)
 	}
 
 	if player.Stats.Strength != 7 {
@@ -29,6 +33,13 @@ func TestNewPlayer(t *testing.T) {
 	if player.Flags == nil {
 		t.Error("Expected Flags map to be initialized")
 	}
+
+	if player.Name != "" {
+		t.Errorf("Expected default Name %q, got %q", "", player.Name)
+	}
+	if player.Avatar != DefaultAvatar {
+		t.Errorf("Expected default Avatar %q, got %q", DefaultAvatar, player.Avatar)
+	}
 }
 
 func TestCurrentNode(t *testing.T) {
@@ -44,8 +55,8 @@ func TestCurrentNode(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("node1")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "node1")
 
 	node, err := engine.CurrentNode(&player)
 	if err != nil {
@@ -84,8 +95,8 @@ func TestApplyChoice_Simple(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("start")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "start")
 
 	result, err := engine.ApplyChoice(&player, "next")
 	if err != nil {
@@ -127,8 +138,8 @@ func TestApplyChoice_WithEffects(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("start")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "start")
 	player.Stats.Health = 10
 
 	result, err := engine.ApplyChoice(&player, "heal")
@@ -170,8 +181,8 @@ func TestApplyChoice_WithCheck(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("start")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "start")
 	player.Stats.Luck = 12 // High luck, should usually succeed
 
 	result, err := engine.ApplyChoice(&player, "try")
@@ -214,8 +225,8 @@ func TestApplyChoice_InvalidChoice(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("start")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "start")
 
 	result, err := engine.ApplyChoice(&player, "invalid")
 	if err != nil {
@@ -258,8 +269,8 @@ func TestApplyChoice_DestinationEffects(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("start")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "start")
 	player.Stats.Health = 10
 
 	result, err := engine.ApplyChoice(&player, "next")
@@ -273,7 +284,7 @@ func TestApplyChoice_DestinationEffects(t *testing.T) {
 }
 
 func TestGetStat(t *testing.T) {
-	player := NewPlayer("test")
+	player := NewPlayer("test", "start")
 	player.Stats.Strength = 10
 	player.Stats.Luck = 8
 	player.Stats.Health = 15
@@ -296,7 +307,7 @@ func TestGetStat(t *testing.T) {
 }
 
 func TestSetStat(t *testing.T) {
-	player := NewPlayer("test")
+	player := NewPlayer("test", "start")
 
 	setStat(&player, "strength", 15)
 	if player.Stats.Strength != 15 {
@@ -315,7 +326,7 @@ func TestSetStat(t *testing.T) {
 }
 
 func TestApplyEffects(t *testing.T) {
-	player := NewPlayer("test")
+	player := NewPlayer("test", "start")
 	player.Stats.Health = 10
 	maxHealth := 12
 	minHealth := 1
@@ -343,7 +354,7 @@ func TestApplyEffects(t *testing.T) {
 }
 
 func TestCheckRoll(t *testing.T) {
-	player := NewPlayer("test")
+	player := NewPlayer("test", "start")
 	player.Stats.Strength = 10
 	player.Stats.Luck = 5
 
@@ -384,7 +395,7 @@ func TestCheckRoll(t *testing.T) {
 }
 
 func TestApplyEffects_ClampStrengthAndLuckBounds(t *testing.T) {
-	player := NewPlayer("test")
+	player := NewPlayer("test", "start")
 	player.Stats.Strength = 12
 	player.Stats.Luck = 1
 
@@ -442,8 +453,8 @@ func TestHealthGameOverRoutesToDeathNode(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("start")
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "start")
 	player.Stats.Health = 3
 
 	result, err := engine.ApplyChoice(&player, "next")
@@ -461,9 +472,9 @@ func TestHealthGameOverRoutesToDeathNode(t *testing.T) {
 
 func TestResolveBattleRound_HealthNeverNegative(t *testing.T) {
 	story := &Story{}
-	engine := &Engine{Story: story}
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
 
-	player := NewPlayer("battle")
+	player := NewPlayer("battle", "battle")
 	player.Stats.Health = 1
 	player.Stats.Strength = 5
 
@@ -513,8 +524,8 @@ func TestApplyChoice_BattleInitializesEnemyState(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Stats.Strength = 10
 	player.Stats.Health = 12
 
@@ -564,8 +575,8 @@ func TestApplyChoice_BattleClearsEnemyStateOnVictory(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Stats.Strength = 12
 	player.Stats.Health = 12
 
@@ -623,8 +634,8 @@ func TestApplyChoice_RunAwayClearsEnemyState(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Enemies = []EnemyState{{Name: testEnemyName, Strength: 8, Health: 2}}
 
 	result, err := engine.ApplyChoice(&player, "run")
@@ -663,8 +674,8 @@ func TestApplyChoice_LuckAttackReducesLuck(t *testing.T) {
 		},
 	}
 
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Stats.Luck = 7
 	player.Stats.Strength = 10
 	player.Stats.Health = 12
@@ -717,8 +728,8 @@ func TestApplyChoice_MultiEnemyInit(t *testing.T) {
 			"forest":  {Text: "Escaped."},
 		},
 	}
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Stats.Strength = 12
 	player.Stats.Health = 12
 
@@ -756,8 +767,8 @@ func TestApplyChoice_BattleRunClearsEnemies(t *testing.T) {
 			safeNodeID: {Text: "You escaped."},
 		},
 	}
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Enemies = []EnemyState{{Name: "Goblin", Strength: 8, Health: 2}}
 
 	result, err := engine.ApplyChoice(&player, "battle:run")
@@ -800,8 +811,8 @@ func TestApplyChoice_HordeInit(t *testing.T) {
 			"forest":  {Text: "Escaped."},
 		},
 	}
-	engine := &Engine{Story: story}
-	player := NewPlayer("battle")
+	engine := &Engine{Stories: map[string]*Story{"battle": story}}
+	player := NewPlayer("battle", "battle")
 	player.Stats.Strength = 12
 	player.Stats.Health = 12
 

@@ -30,7 +30,19 @@ html, body {
   width: 200px;
   grid-column: 1;
 }
-.character-image { display: flex; justify-content: center; width: 100%; }
+.character-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.character-image .character-name {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #eee;
+  text-align: center;
+}
 .character-placeholder { 
   width: 150px; 
   height: 150px; 
@@ -43,6 +55,126 @@ html, body {
   color: #666; 
   font-size: 0.9rem; 
 }
+
+/* ZX81-style avatars: face only. Head = gradient, eyes = ::before + box-shadow (px offset so both eyes show), mouth = ::after. */
+.avatar {
+  width: 150px;
+  height: 150px;
+  background: #0a0a0a;
+  border: 1px solid #1a3d1a;
+  border-radius: 0;
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.avatar::before,
+.avatar::after {
+  content: "";
+  position: absolute;
+  background: #0a0a0a;
+}
+/* male_young: round face, two clear eyes (18px apart), smile mouth */
+.avatar-male_young {
+  background: radial-gradient(ellipse 44% 50% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-male_young::before {
+  width: 12px;
+  height: 10px;
+  top: 38%;
+  left: 38%;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  box-shadow: 18px 0 0 0 #0a0a0a;
+}
+.avatar-male_young::after {
+  top: 56%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 5px;
+  border-radius: 2px;
+}
+/* male_old: narrower face, two eyes, heavy brow line, straight thin mouth */
+.avatar-male_old {
+  background: radial-gradient(ellipse 38% 44% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-male_old::before {
+  width: 10px;
+  height: 8px;
+  top: 38%;
+  left: 36%;
+  transform: translate(-50%, -50%);
+  border-radius: 0;
+  box-shadow: 18px 0 0 0 #0a0a0a, 9px -14px 0 0 #0a0a0a;
+}
+.avatar-male_old::after {
+  top: 56%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 3px;
+  border-radius: 0;
+}
+/* female_young: rounder softer face, bigger wider-set eyes, small smile */
+.avatar-female_young {
+  background: radial-gradient(ellipse 48% 54% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-female_young::before {
+  width: 14px;
+  height: 11px;
+  top: 36%;
+  left: 34%;
+  transform: translate(-50%, -50%);
+  border-radius: 3px;
+  box-shadow: 22px 0 0 0 #0a0a0a;
+}
+.avatar-female_young::after {
+  top: 55%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 4px;
+  border-radius: 3px;
+}
+/* female_old: oval face, smaller eyes, thin line mouth */
+.avatar-female_old {
+  background: radial-gradient(ellipse 40% 46% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-female_old::before {
+  width: 10px;
+  height: 8px;
+  top: 38%;
+  left: 36%;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+  box-shadow: 18px 0 0 0 #0a0a0a;
+}
+.avatar-female_old::after {
+  top: 56%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 3px;
+  border-radius: 0;
+}
+/* In 60px preview, scale face elements so two eyes and mouth fit */
+.avatar-preview.avatar::before {
+  transform: translate(-50%, -50%) scale(0.5);
+  transform-origin: 50% 50%;
+}
+.avatar-preview.avatar-male_young::before,
+.avatar-preview.avatar-female_young::before,
+.avatar-preview.avatar-female_old::before {
+  box-shadow: 9px 0 0 0 #0a0a0a;
+}
+.avatar-preview.avatar-male_old::before {
+  box-shadow: 9px 0 0 0 #0a0a0a, 4px -7px 0 0 #0a0a0a;
+}
+.avatar-preview.avatar::after {
+  transform: translateX(-50%) scale(0.5);
+  transform-origin: 50% 50%;
+}
+
 .character-stats { 
   display: flex !important; 
   flex-direction: column !important; 
@@ -208,6 +340,33 @@ html, body {
   margin: 0 auto;
   width: 100%;
 }
+.story-content.character-create-content {
+  gap: 24px;
+}
+.story-content.character-create-content .character-create,
+.story-content.character-create-content .avatar-select,
+.story-content.character-create-content .adventure-select {
+  margin: 0;
+}
+.adventure-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.adventure-select-label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+.adventure-select-input {
+  padding: 8px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1b1b1b;
+  color: #eee;
+  font-size: 1rem;
+  min-width: 200px;
+}
 .battle-status {
   margin-bottom: 16px;
   padding: 12px 16px;
@@ -289,9 +448,77 @@ html, body {
   flex: 0 1 auto;
   min-width: 150px;
 }
-.actions form.begin-form {
-  display: inline-block;
-  margin: 0;
+form.begin-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+form.begin-form .story-area {
+  flex: 1;
+}
+form.begin-form .choices-area {
+  flex-shrink: 0;
+}
+.character-create {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.character-name-label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+.character-name-input {
+  padding: 8px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1b1b1b;
+  color: #eee;
+  font-size: 1rem;
+  min-width: 180px;
+}
+.avatar-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.avatar-select-label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+.avatar-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.avatar-option {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  padding: 4px;
+}
+.avatar-option:hover {
+  border-color: #333;
+}
+.avatar-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.avatar-option input:checked + .avatar-preview {
+  outline: 2px solid #00cc00;
+  outline-offset: 2px;
+}
+.avatar-preview {
+  width: 60px;
+  height: 60px;
 }
 
 @media (max-width: 768px) {

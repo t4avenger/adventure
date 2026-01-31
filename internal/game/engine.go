@@ -94,9 +94,12 @@ func collapseToHorde(es []EnemyState) []EnemyState {
 	return []EnemyState{{Name: HordeName, Strength: meanStr, Health: sumHealth}}
 }
 
+// DefaultStoryID is the story ID used for new sessions when no choice has been made.
+const DefaultStoryID = "demo"
+
 // Engine manages game state and resolves player choices.
 type Engine struct {
-	Story *Story
+	Stories map[string]*Story // story ID -> Story
 }
 
 // StepResult contains the result of applying a player choice, including
@@ -110,10 +113,16 @@ type StepResult struct {
 	ErrorMessage   string
 }
 
-// NewPlayer creates a new player state with default starting stats.
-func NewPlayer(start string) PlayerState {
+// DefaultAvatar is the avatar ID used for new players.
+const DefaultAvatar = "male_young"
+
+// NewPlayer creates a new player state with default starting stats for the given story.
+func NewPlayer(storyID, startNodeID string) PlayerState {
 	return PlayerState{
-		NodeID: start,
+		NodeID:  startNodeID,
+		StoryID: storyID,
+		Name:    "",
+		Avatar:  DefaultAvatar,
 		Stats: Stats{
 			Strength: 7,
 			Luck:     7,
@@ -123,9 +132,22 @@ func NewPlayer(start string) PlayerState {
 	}
 }
 
+// story returns the story for the player's StoryID; if missing or empty, uses default. Returns nil if no story found.
+func (e *Engine) story(st *PlayerState) *Story {
+	id := st.StoryID
+	if id == "" {
+		id = DefaultStoryID
+	}
+	return e.Stories[id]
+}
+
 // CurrentNode returns the node the player is currently on.
 func (e *Engine) CurrentNode(st *PlayerState) (*Node, error) {
-	n := e.Story.Nodes[st.NodeID]
+	s := e.story(st)
+	if s == nil {
+		return nil, fmt.Errorf("unknown story: %s", st.StoryID)
+	}
+	n := s.Nodes[st.NodeID]
 	if n == nil {
 		return nil, fmt.Errorf("unknown node: %s", st.NodeID)
 	}
@@ -217,8 +239,9 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 	// Apply destination node effects on entry, but avoid re-applying the same
 	// node's effects when we intentionally stay on the same node (e.g. during
 	// multi-round battles).
-	if st.NodeID != oldNodeID {
-		dst := e.Story.Nodes[st.NodeID]
+	s := e.story(st)
+	if s != nil && st.NodeID != oldNodeID {
+		dst := s.Nodes[st.NodeID]
 		if dst != nil && len(dst.Effects) > 0 {
 			applyEffects(st, dst.Effects)
 		}
@@ -228,8 +251,10 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 	// effects, transition to a dedicated death node when available.
 	if st.Stats.Health <= MinHealth {
 		st.Stats.Health = MinHealth
-		if _, ok := e.Story.Nodes[DeathNodeID]; ok {
-			st.NodeID = DeathNodeID
+		if s != nil {
+			if _, ok := s.Nodes[DeathNodeID]; ok {
+				st.NodeID = DeathNodeID
+			}
 		}
 	}
 

@@ -88,7 +88,21 @@ func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r 
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 		})
-		state = game.NewPlayer(s.Engine.Story.Start)
+		defaultStoryID := game.DefaultStoryID
+		defaultStory := s.Engine.Stories[defaultStoryID]
+		if defaultStory == nil {
+			// No default story; use first available
+			for id, st := range s.Engine.Stories {
+				defaultStoryID = id
+				defaultStory = st
+				break
+			}
+		}
+		if defaultStory != nil {
+			state = game.NewPlayer(defaultStoryID, defaultStory.Start)
+		} else {
+			state = game.NewPlayer("", "")
+		}
 		_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
 		return state, id, true
 	}

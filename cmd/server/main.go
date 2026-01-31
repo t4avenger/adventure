@@ -13,9 +13,12 @@ import (
 )
 
 func main() {
-	story, err := game.LoadStory("stories/demo.yaml")
+	stories, err := game.LoadStories("stories")
 	if err != nil {
 		log.Fatal(err)
+	}
+	if len(stories) == 0 {
+		log.Fatal("no adventure YAML files found in stories/")
 	}
 
 	tmpl := template.Must(template.ParseFiles(
@@ -31,7 +34,7 @@ func main() {
 	))
 
 	srv := &web.Server{
-		Engine: &game.Engine{Story: story},
+		Engine: &game.Engine{Stories: stories},
 		Store:  session.NewMemoryStore[game.PlayerState](),
 		Tmpl:   tmpl,
 	}
