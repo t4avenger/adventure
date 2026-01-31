@@ -86,6 +86,7 @@ func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r 
 			Value:    id,
 			Path:     "/",
 			HttpOnly: true,
+			Secure:   true,
 			SameSite: http.SameSiteLaxMode,
 		})
 		defaultStoryID := game.DefaultStoryID

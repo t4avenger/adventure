@@ -62,6 +62,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			Value:    id,
 			Path:     "/",
 			HttpOnly: true,
+			Secure:   true,
 			SameSite: http.SameSiteLaxMode,
 		})
 	}
@@ -175,6 +176,7 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 				Value:    sessionIDFromForm,
 				Path:     "/",
 				HttpOnly: true,
+				Secure:   true,
 				SameSite: http.SameSiteLaxMode,
 			})
 			storyID := r.FormValue("story_id")
