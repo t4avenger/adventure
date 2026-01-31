@@ -106,6 +106,17 @@ go run cmd/server/main.go
 
 The game will be available at `http://localhost:8080`
 
+### Docker
+
+Build and run with Docker (app listens on port 8080 inside the container):
+
+```bash
+docker build -t adventure .
+docker run -p 8080:8080 adventure
+```
+
+Then open `http://localhost:8080`.
+
 ## Running Tests
 
 ### Go tests
