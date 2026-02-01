@@ -175,6 +175,31 @@ html, body {
   transform-origin: 50% 50%;
 }
 
+/* Portrait mode: fantasy character images; gradient fallback if image fails to load */
+.avatar-portrait.avatar::before,
+.avatar-portrait.avatar::after {
+  display: none;
+}
+.avatar-portrait.avatar-male_young {
+  background: url("/static/avatars/male_young.png") center / cover no-repeat,
+    radial-gradient(ellipse 44% 50% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar-male_old {
+  background: url("/static/avatars/male_old.png") center / cover no-repeat,
+    radial-gradient(ellipse 38% 44% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar-female_young {
+  background: url("/static/avatars/female_young.png") center / cover no-repeat,
+    radial-gradient(ellipse 48% 54% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar-female_old {
+  background: url("/static/avatars/female_old.png") center / cover no-repeat,
+    radial-gradient(ellipse 40% 46% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar {
+  box-shadow: 0 0 0 2px rgba(180, 140, 60, 0.4);
+}
+
 .character-stats { 
   display: flex !important; 
   flex-direction: column !important; 
