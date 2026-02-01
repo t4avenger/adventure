@@ -76,15 +76,17 @@ func (s *Server) handleScenery(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ZX Spectrum–style palette: 8×8 attribute blocks, 2 colors per block.
-// Resolution 256×192 (Spectrum native), 32×24 blocks.
+// Pixel-art sunset palette: warm/cool tones to match static harbor scenery.
+// Resolution 256×192, 8×8 blocks (blocky pixel-art style).
 var (
-	spectrumBlack  = color.RGBA{0, 0, 0, 255}
-	spectrumGreen  = color.RGBA{0, 0xAA, 0, 255} // basic green
-	spectrumBright = color.RGBA{0, 0xFF, 0, 255} // bright green
-	spectrumCyan   = color.RGBA{0, 0xFF, 0xFF, 255}
-	spectrumYellow = color.RGBA{0xFF, 0xFF, 0, 255}
-	spectrumGrey   = color.RGBA{0x55, 0x55, 0x55, 255}
+	pixelBlack  = color.RGBA{0x18, 0x14, 0x28, 255} // dark purple-black
+	pixelSky    = color.RGBA{0x45, 0x2c, 0x5c, 255} // deep purple sky
+	pixelWater  = color.RGBA{0x2d, 0x3a, 0x5c, 255} // deep blue
+	pixelSand   = color.RGBA{0x8b, 0x73, 0x55, 255} // warm tan
+	pixelStone  = color.RGBA{0x55, 0x55, 0x66, 255} // grey stone
+	pixelGreen  = color.RGBA{0x2d, 0x5a, 0x3d, 255} // muted green (trees)
+	pixelBright = color.RGBA{0x6b, 0x8c, 0x5a, 255} // lighter green (clearing)
+	pixelWarm   = color.RGBA{0xc4, 0x6c, 0x32, 255} // warm brown/orange (windows, path)
 )
 
 const blockPx = 8
@@ -104,46 +106,95 @@ func fillBlock(img *image.RGBA, bx, by int, clr color.RGBA) {
 	}
 }
 
-// generateSceneryImage produces a ZX Spectrum / C64–style image: strict 8×8
-// attribute blocks, 256×192, so each scene is clearly distinguishable.
+// generateSceneryImage produces a pixel-art style image (8×8 blocks, 256×192)
+// with a sunset/harbor-style palette so generated scenes match static shore/town assets.
 func generateSceneryImage(id string) (image.Image, error) {
 	rect := image.Rect(0, 0, specW, specH)
 	img := image.NewRGBA(rect)
 	for by := 0; by < blocksH; by++ {
 		for bx := 0; bx < blocksW; bx++ {
-			fillBlock(img, bx, by, spectrumBlack)
+			fillBlock(img, bx, by, pixelBlack)
 		}
 	}
 
 	switch id {
 	case "forest":
-		// Trees: vertical columns of green 8×8 blocks (Spectrum attribute columns)
-		for bx := 0; bx < blocksW; bx++ {
-			if bx%4 == 0 || bx%5 == 2 {
+		// Illustrative forest: sky, dark-forest mid, ground, and clear tree shapes (canopy + trunk).
+		// Sky band (twilight purple) – unmistakably different from old stripe-only image.
+		for by := 0; by < blocksH/3; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelSky)
+			}
+		}
+		// Middle: dark forest background (not black stripes – reads as depth).
+		for by := blocksH / 3; by < blocksH-2; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelBlack)
+			}
+		}
+		// Forest floor (bottom two rows, green).
+		for by := blocksH - 2; by < blocksH; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelGreen)
+			}
+		}
+		// Trees: trunk (1 block) + canopy (3 blocks wide, 4 rows). Positions avoid uniform stripes.
+		treeCols := []int{2, 9, 16, 23, 6, 19}
+		for _, bx := range treeCols {
+			if bx < 1 || bx >= blocksW-1 {
 				continue
 			}
-			height := blocksH - 2 - (bx % 3)
-			if height < 8 {
-				height = 8
+			for by := blocksH - 3; by < blocksH; by++ {
+				fillBlock(img, bx, by, pixelStone) // trunk: grey-brown so it reads as bark
 			}
-			for by := blocksH - 1; by >= blocksH-height; by-- {
-				if by >= 0 {
-					fillBlock(img, bx, by, spectrumGreen)
+			canopyTop := blocksH - 7
+			for _, dx := range []int{-1, 0, 1} {
+				cx := bx + dx
+				if cx < 0 || cx >= blocksW {
+					continue
 				}
+				for by := canopyTop; by < blocksH-3; by++ {
+					fillBlock(img, cx, by, pixelGreen)
+				}
+			}
+			if canopyTop >= 0 {
+				fillBlock(img, bx+1, canopyTop, pixelBright)
 			}
 		}
 	case "road":
-		// Horizontal path: 3 rows of grey 8×8 blocks in the middle (C64 road strip)
+		// Road through landscape: sky, green sides, stone path (illustrative).
+		for by := 0; by < blocksH/3; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelSky)
+			}
+		}
+		for by := blocksH / 3; by < blocksH; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelGreen)
+			}
+		}
+		// Cobbled road strip (stone) down the middle.
 		for by := blocksH/2 - 1; by <= blocksH/2+1; by++ {
 			if by < 0 || by >= blocksH {
 				continue
 			}
-			for bx := 0; bx < blocksW; bx++ {
-				fillBlock(img, bx, by, spectrumGrey)
+			for bx := 4; bx < blocksW-4; bx++ {
+				fillBlock(img, bx, by, pixelStone)
 			}
 		}
 	case "clearing":
-		// Open patch: circle of bright green 8×8 blocks (moonlit clearing)
+		// Open patch: sky, ring of trees, circular clearing (lighter green) with ground.
+		for by := 0; by < blocksH/4; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelSky)
+			}
+		}
+		for by := blocksH / 4; by < blocksH; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelGreen)
+			}
+		}
+		// Clearing circle (lighter green).
 		cx, cy := blocksW/2, blocksH*3/4
 		r := 5
 		for by := 0; by < blocksH; by++ {
@@ -151,68 +202,84 @@ func generateSceneryImage(id string) (image.Image, error) {
 				dx := bx - cx
 				dy := by - cy
 				if dx*dx+dy*dy <= r*r {
-					fillBlock(img, bx, by, spectrumBright)
+					fillBlock(img, bx, by, pixelBright)
+				}
+			}
+		}
+		// A few small tree silhouettes at edges (so it reads as clearing in woods).
+		for _, bx := range []int{2, 26} {
+			for by := blocksH - 5; by < blocksH; by++ {
+				fillBlock(img, bx, by, pixelGreen)
+			}
+			if bx+1 < blocksW {
+				for by := blocksH - 4; by < blocksH-1; by++ {
+					fillBlock(img, bx+1, by, pixelGreen)
 				}
 			}
 		}
 	case "shore":
-		// Two bands: sand (yellow) at bottom, water (cyan) above (Spectrum-style bands)
+		// Fallback if static shore.png missing: sand + water bands (sunset palette)
 		for by := blocksH - 4; by < blocksH; by++ {
 			for bx := 0; bx < blocksW; bx++ {
-				fillBlock(img, bx, by, spectrumYellow)
+				fillBlock(img, bx, by, pixelSand)
 			}
 		}
 		for by := blocksH - 6; by < blocksH-4; by++ {
 			if by >= 0 {
 				for bx := 0; bx < blocksW; bx++ {
-					fillBlock(img, bx, by, spectrumCyan)
+					fillBlock(img, bx, by, pixelWater)
 				}
 			}
 		}
 	case "hills":
-		// Layered horizon: 4 bands of green 8×8 blocks from bottom (C64/Spectrum horizon)
+		// Hills at dusk: sky, then layered green hills (illustrative depth).
+		for by := 0; by < blocksH/4; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelSky)
+			}
+		}
 		for band := 0; band < 4; band++ {
-			by := blocksH - 2 - band*3
-			if by < 0 {
+			by := blocksH - 2 - band*4
+			if by < blocksH/4 {
 				break
 			}
 			for bx := 0; bx < blocksW; bx++ {
-				fillBlock(img, bx, by, spectrumGreen)
+				fillBlock(img, bx, by, pixelGreen)
 				if by+1 < blocksH {
-					fillBlock(img, bx, by+1, spectrumGreen)
+					fillBlock(img, bx, by+1, pixelGreen)
 				}
 			}
 		}
 	case "bridge":
-		// Single horizontal row of green blocks (bridge over black)
+		// Stone bridge strip over dark
 		by := blocksH / 2
 		for bx := 0; bx < blocksW; bx++ {
-			fillBlock(img, bx, by, spectrumGreen)
+			fillBlock(img, bx, by, pixelStone)
 		}
 	case "cave", "dungeon":
-		// Pillars: vertical strips of grey 8×8 blocks (Spectrum 2-color blocks)
+		// Pillars: vertical strips of stone (dungeon)
 		for i := 0; i < 5; i++ {
 			bx := 4 + i*6
 			if bx+1 >= blocksW {
 				continue
 			}
 			for by := 0; by < blocksH; by++ {
-				fillBlock(img, bx, by, spectrumGrey)
-				fillBlock(img, bx+1, by, spectrumGrey)
+				fillBlock(img, bx, by, pixelStone)
+				fillBlock(img, bx+1, by, pixelStone)
 			}
 		}
 	case "house_inside", "castle_inside":
-		// Room: floor = grey blocks in center, black frame (interior frame)
+		// Room: stone floor, warm strip (window light)
 		for by := blocksH / 4; by < blocksH; by++ {
 			for bx := 4; bx < blocksW-4; bx++ {
-				fillBlock(img, bx, by, spectrumGrey)
+				fillBlock(img, bx, by, pixelStone)
 			}
 		}
 		for bx := 2; bx < blocksW-2; bx++ {
-			fillBlock(img, bx, blocksH/4-1, spectrumGreen)
+			fillBlock(img, bx, blocksH/4-1, pixelWarm)
 		}
 	case "town", "village":
-		// Buildings: 5 rectangles of green blocks at bottom (different heights)
+		// Fallback if static town.png missing: building blocks (stone + warm windows)
 		buildingHeights := []int{6, 4, 8, 5, 7}
 		for i, bh := range buildingHeights {
 			bx := 2 + i*6
@@ -224,26 +291,48 @@ func generateSceneryImage(id string) (image.Image, error) {
 					continue
 				}
 				for ww := 0; ww < 4 && bx+ww < blocksW; ww++ {
-					fillBlock(img, bx+ww, by, spectrumGreen)
+					fillBlock(img, bx+ww, by, pixelStone)
+				}
+			}
+			// Warm window strip
+			by := blocksH - bh - 1
+			if by >= 0 {
+				for ww := 0; ww < 4 && bx+ww < blocksW; ww++ {
+					fillBlock(img, bx+ww, by, pixelWarm)
 				}
 			}
 		}
 	case "river":
-		// One horizontal band of cyan (water) – very distinct
-		by := blocksH / 2
-		for bx := 0; bx < blocksW; bx++ {
-			fillBlock(img, bx, by, spectrumCyan)
-			if by+1 < blocksH {
-				fillBlock(img, bx, by+1, spectrumCyan)
+		// River through landscape: sky, green banks, horizontal water band (illustrative).
+		for by := 0; by < blocksH/3; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelSky)
+			}
+		}
+		for by := blocksH / 3; by < blocksH; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelGreen)
+			}
+		}
+		// Water band (deep blue).
+		for by := blocksH/2 - 1; by <= blocksH/2+2; by++ {
+			if by < 0 || by >= blocksH {
+				continue
+			}
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelWater)
 			}
 		}
 	default:
-		// default: checkerboard of green blocks (Spectrum loading screen style)
-		for by := 0; by < blocksH; by++ {
+		// default: sky + ground bands (sunset mood)
+		for by := 0; by < blocksH/2; by++ {
 			for bx := 0; bx < blocksW; bx++ {
-				if (bx+by)%2 == 0 {
-					fillBlock(img, bx, by, spectrumGreen)
-				}
+				fillBlock(img, bx, by, pixelSky)
+			}
+		}
+		for by := blocksH / 2; by < blocksH; by++ {
+			for bx := 0; bx < blocksW; bx++ {
+				fillBlock(img, bx, by, pixelGreen)
 			}
 		}
 	}
