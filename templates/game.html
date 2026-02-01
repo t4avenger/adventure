@@ -14,7 +14,7 @@
 
   <div class="story-area story-area-game">
     <div class="scenery {{if .Node.Scenery}}scenery-{{.Node.Scenery}}{{else}}scenery-default{{end}} {{if .Node.EntryAnimation}}entry-animation-{{.Node.EntryAnimation}}{{end}}" data-scenery="{{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}" role="img" aria-label="Scenery: {{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}">
-      <img src="/scenery/{{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}.png?v=2" alt="" class="scenery-img" onerror="this.remove()">
+      <img src="/scenery/{{.State.StoryID}}/{{if .Node.Scenery}}{{.Node.Scenery}}{{else}}default{{end}}?v=2" alt="" class="scenery-img" onerror="this.remove()">
     </div>
     <div class="story-text-strip">
       {{if .Message}}<p class="msg">{{.Message}}</p>{{end}}

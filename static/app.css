@@ -175,6 +175,31 @@ html, body {
   transform-origin: 50% 50%;
 }
 
+/* Portrait mode: fantasy character images; gradient fallback if image fails to load */
+.avatar-portrait.avatar::before,
+.avatar-portrait.avatar::after {
+  display: none;
+}
+.avatar-portrait.avatar-male_young {
+  background: url("/static/avatars/male_young.png") center / cover no-repeat,
+    radial-gradient(ellipse 44% 50% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar-male_old {
+  background: url("/static/avatars/male_old.png") center / cover no-repeat,
+    radial-gradient(ellipse 38% 44% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar-female_young {
+  background: url("/static/avatars/female_young.png") center / cover no-repeat,
+    radial-gradient(ellipse 48% 54% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar-female_old {
+  background: url("/static/avatars/female_old.png") center / cover no-repeat,
+    radial-gradient(ellipse 40% 46% at 50% 48%, #00cc00 0%, #00cc00 98%, #0a0a0a 100%);
+}
+.avatar-portrait.avatar {
+  box-shadow: 0 0 0 2px rgba(180, 140, 60, 0.4);
+}
+
 .character-stats { 
   display: flex !important; 
   flex-direction: column !important; 
@@ -187,9 +212,23 @@ html, body {
 .character-stats div { font-size: 0.95rem; }
 .character-stats strong { color: #ffcc66; font-weight: 600; }
 
+.treasure-map-section {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #141414;
+}
+.treasure-map-heading {
+  margin: 0 0 6px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 #sidebar-left .map-link {
   margin: 0;
-  margin-top: 4px;
   font-size: 0.85rem;
 }
 #sidebar-left .map-link a {
@@ -428,88 +467,85 @@ html, body {
   /* Placeholder for future images/animations */
 }
 
-/* ZX81-style scenery: fills story area, green-on-black blocky look */
+/* Pixel-art sunset scenery: fills story area; fallbacks when img fails to load */
 .scenery {
   position: relative;
   overflow: hidden;
   flex: 1;
   min-height: 240px;
-  border: 2px solid #2d6b2d;
+  border: 2px solid #452c5c;
   border-radius: 0;
-  background-color: #0d1a0d;
+  background-color: #181428;
 }
 .scenery .scenery-img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain so full scene (sky, trees, ground) is visible; cover was cropping to stripes */
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 .scenery-default {
-  background: #0d1a0d radial-gradient(ellipse 80% 60% at 50% 80%, #1e4d1e 0%, #0d2810 60%);
+  background: linear-gradient(180deg, #452c5c 0%, #2d5a3d 50%, #181428 100%);
+  box-shadow: inset 0 0 60px rgba(255, 153, 51, 0.08);
 }
-/* Forest: visible green base + vertical "tree" stripes */
+/* Forest: sky, dark mid, ground (matches generated scene; fallback when img fails) */
 .scenery-forest {
-  background:
-    linear-gradient(90deg, transparent 0%, transparent 14%, #1e4d1e 14%, #1e4d1e 18%, transparent 18%, transparent 32%, #1a4520 32%, #1a4520 36%, transparent 36%, transparent 50%, #225522 50%, #225522 54%, transparent 54%, transparent 68%, #1a4520 68%, #1a4520 72%, transparent 72%, transparent 86%, #1e4d1e 86%, #1e4d1e 90%, transparent 90%),
-    linear-gradient(180deg, #0d2010 0%, #1a3d1a 30%, #0d2410 100%);
-  box-shadow: inset 0 0 80px rgba(0, 80, 0, 0.25);
+  background: linear-gradient(180deg, #452c5c 0%, #452c5c 25%, #181428 25%, #181428 85%, #2d5a3d 85%, #2d5a3d 100%);
+  box-shadow: inset 0 0 60px rgba(45, 90, 61, 0.2);
 }
 .scenery-river {
-  background:
-    linear-gradient(180deg, #0d2010 0%, #1a3540 35%, #1e4048 50%, #1a3540 65%, #0d2010 100%);
-  box-shadow: inset 0 0 60px rgba(0, 70, 60, 0.2);
+  background: linear-gradient(180deg, #181428 0%, #2d3a5c 35%, #2d3a5c 50%, #2d3a5c 65%, #181428 100%);
+  box-shadow: inset 0 0 50px rgba(45, 58, 92, 0.3);
 }
 .scenery-hills {
-  background: linear-gradient(180deg, #225522 0%, #1a3d1a 25%, #0d2810 50%, #1a3d1a 75%, #0d1a0d 100%);
-  box-shadow: inset 0 0 60px rgba(0, 80, 0, 0.22);
+  background: linear-gradient(180deg, #2d5a3d 0%, #1a4520 25%, #181428 50%, #1a4520 75%, #181428 100%);
+  box-shadow: inset 0 0 50px rgba(45, 90, 61, 0.2);
 }
 .scenery-town {
-  background: linear-gradient(180deg, #0d1a0d 0%, #1e3520 45%, #0d2010 100%);
-  box-shadow: inset 0 0 80px rgba(40, 60, 40, 0.15);
+  background: linear-gradient(180deg, #452c5c 0%, #3d2a48 30%, #2d3a4c 60%, #181428 100%);
+  box-shadow: inset 0 0 60px rgba(196, 108, 50, 0.12);
 }
 .scenery-village {
-  background: linear-gradient(180deg, #1a3520 0%, #0d2010 70%);
-  box-shadow: inset 0 0 50px rgba(0, 60, 0, 0.15);
+  background: linear-gradient(180deg, #2d3a4c 0%, #1a2820 70%);
+  box-shadow: inset 0 0 40px rgba(196, 108, 50, 0.1);
 }
-/* Road: darker sides, lighter path band through middle */
 .scenery-road {
   background:
-    linear-gradient(180deg, #0d1a0d 0%, #0d1a0d 32%, #225522 38%, #2a652a 50%, #225522 62%, #0d1a0d 68%, #0d1a0d 100%),
-    linear-gradient(180deg, #0d2010 0%, #152a18 100%);
-  box-shadow: inset 0 0 40px rgba(0, 50, 0, 0.15);
+    linear-gradient(180deg, #181428 0%, #181428 32%, #555566 38%, #666677 50%, #555566 62%, #181428 68%, #181428 100%),
+    linear-gradient(180deg, #1a1c28 0%, #252830 100%);
+  box-shadow: inset 0 0 30px rgba(85, 85, 102, 0.2);
 }
-/* Shore: horizontal band for sand/water */
+/* Shore: sunset sky, water, sand (harbor fallback) */
 .scenery-shore {
-  background:
-    linear-gradient(180deg, #0d1a0d 0%, #1a2d2a 28%, #1e3532 42%, #1a3028 55%, #1a2d2a 72%, #0d1a0d 100%);
-  box-shadow: inset 0 0 60px rgba(0, 60, 50, 0.2);
+  background: linear-gradient(180deg, #452c5c 0%, #2d3a5c 25%, #2d3a5c 45%, #8b7355 70%, #6b5344 100%);
+  box-shadow: inset 0 0 60px rgba(255, 153, 51, 0.1);
 }
 .scenery-bridge {
-  background: linear-gradient(180deg, #0d1a0d 0%, #1a3528 40%, #225532 50%, #1a3528 60%, #0d1a0d 100%);
-  box-shadow: inset 0 0 50px rgba(0, 60, 50, 0.15);
+  background: linear-gradient(180deg, #181428 0%, #555566 45%, #555566 55%, #181428 100%);
+  box-shadow: inset 0 0 40px rgba(85, 85, 102, 0.2);
 }
-/* Clearing: brighter central "sky" patch */
 .scenery-clearing {
-  background: radial-gradient(ellipse 120% 90% at 50% 85%, #2a5a2a 0%, #1a4520 35%, #0d2810 70%);
-  box-shadow: inset 0 0 100px rgba(0, 100, 0, 0.3);
+  background: radial-gradient(ellipse 120% 90% at 50% 85%, #6b8c5a 0%, #2d5a3d 35%, #181428 70%);
+  box-shadow: inset 0 0 80px rgba(107, 140, 90, 0.25);
 }
 .scenery-house_inside {
-  background: linear-gradient(180deg, #0d0d0d 0%, #1e2a1e 30%, #0d150d 100%);
-  box-shadow: inset 0 0 100px rgba(30, 45, 30, 0.15);
+  background: linear-gradient(180deg, #181428 0%, #555566 25%, #252830 100%);
+  box-shadow: inset 0 0 80px rgba(196, 108, 50, 0.15);
 }
 .scenery-castle_inside {
-  background: linear-gradient(180deg, #0d0d0d 0%, #1a1e18 35%, #0d0d0d 100%);
-  box-shadow: inset 0 0 80px rgba(35, 40, 30, 0.18);
+  background: linear-gradient(180deg, #181428 0%, #454555 30%, #181428 100%);
+  box-shadow: inset 0 0 60px rgba(196, 108, 50, 0.1);
 }
 .scenery-cave {
-  background: linear-gradient(180deg, #080808 0%, #0d1810 50%, #080a08 100%);
-  box-shadow: inset 0 0 100px rgba(0, 30, 0, 0.12);
+  background: linear-gradient(180deg, #0c0814 0%, #181428 50%, #0c0814 100%);
+  box-shadow: inset 0 0 80px rgba(45, 58, 92, 0.15);
 }
 .scenery-dungeon {
-  background: linear-gradient(180deg, #060606 0%, #0d120d 50%, #060606 100%);
-  box-shadow: inset 0 0 80px rgba(0, 25, 0, 0.1);
+  background: linear-gradient(180deg, #080610 0%, #181428 50%, #080610 100%);
+  box-shadow: inset 0 0 60px rgba(45, 58, 92, 0.1);
 }
 
 /* Entry animation: door opening (runs once on node entry) */

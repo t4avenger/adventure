@@ -5,6 +5,9 @@ package mapgen
 import (
 	"bytes"
 	"math"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"adventure/internal/game"
@@ -13,8 +16,8 @@ import (
 )
 
 const (
-	pageW     = 595
-	pageH     = 842
+	pageW     = 842 // A4 landscape
+	pageH     = 595
 	margin    = 40
 	sceneSize = 56.0
 	pathStep  = 70.0
@@ -23,10 +26,16 @@ const (
 	labelSize = 7
 )
 
+// sceneryExtensions lists file extensions to try when the scenery value has no extension.
+var sceneryExtensions = []string{".png", ".jpg", ".jpeg"}
+
 // Generate returns PDF bytes for a treasure map: visited nodes as illustrated
 // scenes (beach, forest, bridge, battle, etc.) along a path. If visitedNodes
 // is nil or empty, currentID is used as the only stop.
-func Generate(st *game.Story, visitedNodes []string, currentID, title string) ([]byte, error) {
+// If storyID and storiesDir are non-empty, scenery images are loaded from
+// storiesDir/storyID/scenery/<filename> and embedded when available; otherwise
+// vector icons are drawn (drawScene).
+func Generate(st *game.Story, visitedNodes []string, currentID, title, storyID, storiesDir string) ([]byte, error) {
 	if st == nil || st.Nodes == nil {
 		return nil, nil
 	}
@@ -58,11 +67,11 @@ func Generate(st *game.Story, visitedNodes []string, currentID, title string) ([
 		}
 		stops = append(stops, stop{id: id, scenery: scenery, isBattle: isBattle})
 	}
-	// Layout: winding path (snake) so the journey zig-zags across the map
+	// Layout: winding path (snake) so the journey zig-zags across the map (landscape: more per row)
 	positions := make([][2]float64, len(stops))
 	x0 := float64(margin) + sceneSize
 	y0 := float64(margin) + 72
-	perRow := 4
+	perRow := 5
 	for i := range stops {
 		row := i / perRow
 		col := i % perRow
@@ -73,7 +82,7 @@ func Generate(st *game.Story, visitedNodes []string, currentID, title string) ([
 		positions[i][1] = y0 + float64(row)*pathStep
 	}
 
-	pdf := gofpdf.New("P", "pt", "A4", "")
+	pdf := gofpdf.New("L", "pt", "A4", "")
 	pdf.SetMargins(margin, margin, margin)
 	pdf.SetAutoPageBreak(false, 0)
 	pdf.AddPage()
@@ -116,11 +125,16 @@ func Generate(st *game.Story, visitedNodes []string, currentID, title string) ([
 	pdf.SetLineWidth(1)
 	pdf.SetDrawColor(80, 50, 30)
 
-	// Illustrated scenes with labels below (cartoony, bold outlines)
+	// Illustrated scenes with labels below (embed scenery image when available, else vector)
 	for i := range stops {
 		x, y := positions[i][0], positions[i][1]
 		isCurrent := stops[i].id == currentID
-		drawScene(pdf, x, y, stops[i].scenery, stops[i].isBattle, isCurrent)
+		imgData, imgType := tryLoadSceneImage(storiesDir, storyID, stops[i].scenery)
+		if imgData != nil && imgType != "" {
+			drawSceneImage(pdf, x, y, imgData, imgType, stops[i].isBattle, isCurrent, i, stops[i].id)
+		} else {
+			drawScene(pdf, x, y, stops[i].scenery, stops[i].isBattle, isCurrent)
+		}
 		// Label below scene: humanized node ID in caps (e.g. "SKULL ROCK")
 		label := strings.ReplaceAll(stops[i].id, "_", " ")
 		label = strings.ToUpper(label)
@@ -145,6 +159,78 @@ func Generate(st *game.Story, visitedNodes []string, currentID, title string) ([
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// tryLoadSceneImage loads scenery image from storiesDir/storyID/scenery/<filename>.
+// Returns (data, imageType) or (nil, "") if storiesDir/storyID empty or file not found.
+// Path is validated (no traversal); filename is scenery value with optional extension.
+func tryLoadSceneImage(storiesDir, storyID, scenery string) (data []byte, imgType string) {
+	if storiesDir == "" || storyID == "" || scenery == "" {
+		return nil, ""
+	}
+	safeFilename := filepath.Clean(scenery)
+	if safeFilename == "" || safeFilename == "." || strings.Contains(safeFilename, "..") ||
+		filepath.IsAbs(safeFilename) || strings.Contains(safeFilename, string(filepath.Separator)) {
+		return nil, ""
+	}
+	baseDir := filepath.Join(storiesDir, storyID, "scenery")
+	resolved := filepath.Join(baseDir, safeFilename)
+	rel, err := filepath.Rel(baseDir, resolved)
+	if err != nil || strings.Contains(rel, "..") {
+		return nil, ""
+	}
+	candidates := []string{resolved}
+	for _, ext := range sceneryExtensions {
+		candidates = append(candidates, resolved+ext)
+	}
+	for _, p := range candidates {
+		data, err := os.ReadFile(p) // #nosec G304 -- p is under validated baseDir
+		if err != nil {
+			continue
+		}
+		if len(data) < 4 {
+			continue
+		}
+		imgType := "png"
+		if data[0] == 0xff && data[1] == 0xd8 {
+			imgType = "jpeg"
+		}
+		return data, imgType
+	}
+	return nil, ""
+}
+
+// drawSceneImage embeds an image at (x,y) with size sceneSize, then draws current/battle overlay if needed.
+func drawSceneImage(pdf *gofpdf.Fpdf, x, y float64, imgData []byte, imgType string, isBattle, isCurrent bool, index int, _ string) {
+	name := "scene_" + strconv.Itoa(index)
+	opts := gofpdf.ImageOptions{ImageType: imgType}
+	info := pdf.RegisterImageOptionsReader(name, opts, bytes.NewReader(imgData))
+	if info == nil {
+		return
+	}
+	w, h := sceneSize, sceneSize
+	imgW, imgH := info.Extent()
+	if imgW > 0 && imgH > 0 {
+		// Fit image in sceneSize box, preserve aspect
+		scale := sceneSize / imgW
+		if imgH*scale > sceneSize {
+			scale = sceneSize / imgH
+		}
+		w = imgW * scale
+		h = imgH * scale
+	}
+	pdf.Image(name, x-w/2, y-h/2, w, h, false, "", 0, "")
+	if isCurrent {
+		r := sceneSize/2.0 + 4.0
+		pdf.SetDrawColor(80, 50, 20)
+		pdf.SetLineWidth(2)
+		pdf.Circle(x, y, r, "D")
+		pdf.SetLineWidth(1)
+	}
+	pdf.SetDrawColor(80, 50, 30)
+	if isBattle {
+		drawBattle(pdf, x, y, sceneSize/2.0)
+	}
 }
 
 // drawWavyBorder draws an organic, tattered black border around the map (parchment edge).

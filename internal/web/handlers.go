@@ -13,9 +13,10 @@ import (
 
 // Server handles HTTP requests for the adventure game.
 type Server struct {
-	Engine *game.Engine
-	Store  session.Store[game.PlayerState]
-	Tmpl   *template.Template
+	Engine     *game.Engine
+	Store      session.Store[game.PlayerState]
+	Tmpl       *template.Template
+	StoriesDir string // optional; base dir for stories (scenery handler; tests set to temp dir)
 }
 
 const cookieName = "adventure_sid"

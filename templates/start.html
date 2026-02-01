@@ -24,7 +24,7 @@
           {{range .AvatarOptions}}
           <label class="avatar-option">
             <input type="radio" name="avatar" value="{{.}}" {{if eq $.Avatar .}}checked{{end}}>
-            <div class="avatar avatar-{{.}} avatar-preview"></div>
+            <div class="avatar avatar-portrait avatar-{{.}} avatar-preview"></div>
           </label>
           {{end}}
         </div>

@@ -2,7 +2,9 @@ package web
 
 import (
 	"context"
+	"errors"
 	"html/template"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -159,6 +161,61 @@ func TestHandlePlay_UnknownSessionRedirectsToStart(t *testing.T) {
 	}
 }
 
+func TestHandlePlay_NoCookie_CreatesStateAndRenders(t *testing.T) {
+	srv := testServer(t)
+	// No cookie: getOrCreateState creates new session and state from default story, then applies choice.
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=next"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "The end.") {
+		t.Error("Expected body to contain 'The end.'")
+	}
+	// New session cookie should be set
+	if rec.Header().Get("Set-Cookie") == "" {
+		t.Error("Expected Set-Cookie for new session")
+	}
+}
+
+func TestHandlePlay_EmptyStories_NewPlayerEmpty(t *testing.T) {
+	// Server with no stories: getOrCreateState uses NewPlayer("", ""); CurrentNode then errors.
+	srv := testServer(t)
+	srv.Engine = &game.Engine{Stories: map[string]*game.Story{}}
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=next"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("Expected 500 when no stories, got %d", rec.Code)
+	}
+}
+
+// errReader is an io.Reader that always returns an error (for testing ParseForm failure).
+type errReader struct{ err error }
+
+func (e *errReader) Read([]byte) (int, error) { return 0, e.err }
+
+func TestHandlePlay_ParseFormError_BadRequest(t *testing.T) {
+	srv := testServer(t)
+	ctx := context.Background()
+	st := game.NewPlayer("test", "start")
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/play", io.NopCloser(&errReader{err: errors.New("read error")}))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 on ParseForm error, got %d", rec.Code)
+	}
+}
+
 func TestAdventureOptions(t *testing.T) {
 	srv := testServer(t)
 	opts := srv.adventureOptions()
@@ -255,6 +312,69 @@ func TestHandleMap_NoSession_RedirectsToStart(t *testing.T) {
 	}
 	if loc := rec.Header().Get("Location"); loc != pathStart {
 		t.Errorf("GET /map no session: expected Location %s, got %q", pathStart, loc)
+	}
+}
+
+func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
+	// Story with a node that has a battle choice so makeViewModel builds EffectiveChoices.
+	story := &game.Story{
+		Start: "start",
+		Nodes: map[string]*game.Node{
+			"start": {
+				Text: "Start.",
+				Choices: []game.Choice{
+					{Key: "go", Text: "Go to road", Next: "road"},
+				},
+			},
+			"road": {
+				Text: "A goblin blocks the path.",
+				Choices: []game.Choice{
+					{
+						Key:  "fight",
+						Text: "Fight",
+						Battle: &game.Battle{
+							Enemies: []game.Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
+						},
+					},
+				},
+			},
+		},
+	}
+	engine := &game.Engine{Stories: map[string]*game.Story{testStoryID: story}}
+	store := session.NewMemoryStore[game.PlayerState]()
+	tmplDir := filepath.Join("..", "..", "templates")
+	tmpl := template.Must(template.ParseFiles(
+		filepath.Join(tmplDir, "layout.html"),
+		filepath.Join(tmplDir, "layout_head.html"),
+		filepath.Join(tmplDir, "sidebar_left.html"),
+		filepath.Join(tmplDir, "sidebar_right.html"),
+		filepath.Join(tmplDir, "sidebar_left_oob.html"),
+		filepath.Join(tmplDir, "sidebar_right_oob.html"),
+		filepath.Join(tmplDir, "game.html"),
+		filepath.Join(tmplDir, "game_response.html"),
+		filepath.Join(tmplDir, "start.html"),
+	))
+	srv := &Server{Engine: engine, Store: store, Tmpl: tmpl}
+
+	ctx := context.Background()
+	st := game.NewPlayer(testStoryID, "start")
+	st.NodeID = "road" // already at road
+	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Attack") {
+		t.Error("Expected response to contain battle choice 'Attack' from makeViewModel EffectiveChoices")
 	}
 }
 
