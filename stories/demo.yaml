@@ -67,7 +67,7 @@ nodes:
 
   road:
     text: "On the road, a goblin blocks your path, snarling as it draws a rusty blade."
-    scenery: "road"
+    scenery: "road_goblin"
     choices:
       - key: "fight"
         text: "Attack the goblin (Strength + 2d6)"
@@ -99,7 +99,7 @@ nodes:
 
   road_three:
     text: "Two foes block the path: a goblin and an orc. Choose who to attack."
-    scenery: "road"
+    scenery: "road_goblin_orc"
     choices:
       - key: "battle"
         text: "Fight"
@@ -117,7 +117,7 @@ nodes:
 
   road_horde:
     text: "A pack of creatures swarms the road. You face a horde."
-    scenery: "road"
+    scenery: "road_horde"
     choices:
       - key: "battle"
         text: "Fight"

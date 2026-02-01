@@ -212,9 +212,23 @@ html, body {
 .character-stats div { font-size: 0.95rem; }
 .character-stats strong { color: #ffcc66; font-weight: 600; }
 
+.treasure-map-section {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #141414;
+}
+.treasure-map-heading {
+  margin: 0 0 6px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 #sidebar-left .map-link {
   margin: 0;
-  margin-top: 4px;
   font-size: 0.85rem;
 }
 #sidebar-left .map-link a {

@@ -14,7 +14,7 @@ alwaysApply: true
 
 ## Tests
 
-- **Go**: When changing game logic, handlers, or session behaviour, add or update tests in the matching `*_test.go` (e.g. `internal/game/engine_test.go`, `internal/web/` if needed). When changing the scenery handler (`internal/web/scenery.go`), path construction, or valid scenery IDs: keep path validation (e.g. `filepath.Join` + `filepath.Rel` check so the path cannot escape `static/scenery`), and add or update tests in `internal/web/scenery_test.go`.
+- **Go**: When changing game logic, handlers, or session behaviour, add or update tests in the matching `*_test.go` (e.g. `internal/game/engine_test.go`, `internal/web/` if needed). When changing the scenery handler (`internal/web/scenery.go`), path construction, or story ID validation: keep path validation (e.g. `filepath.Join` + `filepath.Rel` check so the path cannot escape `stories/<storyID>/scenery`), validate storyID against Engine.Stories, and add or update tests in `internal/web/scenery_test.go`.
 - **JavaScript**: When changing `static/js/app.js` (sidebar sync, dice, HTMX glue), add or update tests in `static/js/app.test.js`. Run `make test-js` or `npm test`.
 - **Coverage**: `make test` enforces a minimum **75%** total coverage (`COVERAGE_MIN` in the Makefile) and fails if below. Use `make coverage-check` to re-check an existing `coverage.out` without rerunning tests. Add or update tests when adding handlers, engine logic, or session behaviour so that total coverage stays at or above 75%.
 
@@ -28,4 +28,4 @@ alwaysApply: true
 
 - Full HTMX/JS plan: `docs/HTMX_AND_JS_REFACTOR_PLAN.md`
 - Go tools: `make install-tools`; JS: `make install-js`. Run `make check` for all checks.
-- Scenery images and IDs: README section "Scenery and animations"; static files in `static/scenery/`, generated images via `/scenery/{id}.png`.
+- Scenery images: README section "Scenery and animations"; per-story images in `stories/<story_id>/scenery/`, served via `/scenery/<storyID>/<filename>`.

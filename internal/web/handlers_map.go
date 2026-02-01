@@ -31,7 +31,8 @@ func (s *Server) handleMap(w http.ResponseWriter, r *http.Request) {
 	if title == "" {
 		title = state.StoryID
 	}
-	pdf, err := mapgen.Generate(st, state.VisitedNodes, state.NodeID, title)
+	storiesDir := s.storiesBase()
+	pdf, err := mapgen.Generate(st, state.VisitedNodes, state.NodeID, title, state.StoryID, storiesDir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

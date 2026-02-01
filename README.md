@@ -309,23 +309,9 @@ effects:
 
 ### Scenery and animations
 
-Each node can optionally set a **scenery** ID so the story area shows a matching backdrop. Story text appears in a strip along the bottom and scrolls when long.
+Each node can optionally set a **scenery** value so the story area shows a backdrop image. Story text appears in a strip along the bottom and scrolls when long.
 
-**Scenery images**: The game requests `/scenery/{id}.png` for each scenery ID. If you place a PNG in `static/scenery/{id}.png` (e.g. `static/scenery/forest.png`), that image is used. Otherwise the server generates a ZX81-style blocky image (green on black, 320×200) so every location has a visible graphic without external assets.
-
-**Scenery IDs** (omit or use `default` for no specific scenery):
-
-| Outside | Inside |
-|---------|--------|
-| `forest` | `house_inside` |
-| `river` | `castle_inside` |
-| `hills` | `cave` |
-| `town` | `dungeon` |
-| `village` | |
-| `road` | |
-| `shore` | |
-| `bridge` | |
-| `clearing` | |
+**Scenery images** are image-based and linked from the story YAML. Each story has a strict directory for its scenery: `stories/<story_id>/scenery/`. In the YAML, set `scenery` to the **filename** (with or without extension) of an image in that directory, e.g. `scenery: "forest"` or `scenery: "forest.png"`. The server looks for that file and tries `.png`, `.jpg`, and `.jpeg` if no extension is given. Only files under `stories/<story_id>/scenery/` are served (no path traversal). If the file is missing, the request returns 404 and the UI may show a CSS fallback. Omit `scenery` or use `default` to request `default.png` (or `default.jpg`) from the same directory.
 
 **Entry animations**: Optional `entry_animation` plays when entering the node (e.g. going through a door):
 

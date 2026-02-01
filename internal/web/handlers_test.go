@@ -315,6 +315,69 @@ func TestHandleMap_NoSession_RedirectsToStart(t *testing.T) {
 	}
 }
 
+func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
+	// Story with a node that has a battle choice so makeViewModel builds EffectiveChoices.
+	story := &game.Story{
+		Start: "start",
+		Nodes: map[string]*game.Node{
+			"start": {
+				Text: "Start.",
+				Choices: []game.Choice{
+					{Key: "go", Text: "Go to road", Next: "road"},
+				},
+			},
+			"road": {
+				Text: "A goblin blocks the path.",
+				Choices: []game.Choice{
+					{
+						Key:  "fight",
+						Text: "Fight",
+						Battle: &game.Battle{
+							Enemies: []game.Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
+						},
+					},
+				},
+			},
+		},
+	}
+	engine := &game.Engine{Stories: map[string]*game.Story{testStoryID: story}}
+	store := session.NewMemoryStore[game.PlayerState]()
+	tmplDir := filepath.Join("..", "..", "templates")
+	tmpl := template.Must(template.ParseFiles(
+		filepath.Join(tmplDir, "layout.html"),
+		filepath.Join(tmplDir, "layout_head.html"),
+		filepath.Join(tmplDir, "sidebar_left.html"),
+		filepath.Join(tmplDir, "sidebar_right.html"),
+		filepath.Join(tmplDir, "sidebar_left_oob.html"),
+		filepath.Join(tmplDir, "sidebar_right_oob.html"),
+		filepath.Join(tmplDir, "game.html"),
+		filepath.Join(tmplDir, "game_response.html"),
+		filepath.Join(tmplDir, "start.html"),
+	))
+	srv := &Server{Engine: engine, Store: store, Tmpl: tmpl}
+
+	ctx := context.Background()
+	st := game.NewPlayer(testStoryID, "start")
+	st.NodeID = "road" // already at road
+	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Attack") {
+		t.Error("Expected response to contain battle choice 'Attack' from makeViewModel EffectiveChoices")
+	}
+}
+
 func TestHandleMap_ReturnsPDF(t *testing.T) {
 	srv := testServer(t)
 	ctx := context.Background()
