@@ -313,6 +313,8 @@ Each node can optionally set a **scenery** value so the story area shows a backd
 
 **Scenery images** are image-based and linked from the story YAML. Each story has a strict directory for its scenery: `stories/<story_id>/scenery/`. In the YAML, set `scenery` to the **filename** (with or without extension) of an image in that directory, e.g. `scenery: "forest"` or `scenery: "forest.png"`. The server looks for that file and tries `.png`, `.jpg`, and `.jpeg` if no extension is given. Only files under `stories/<story_id>/scenery/` are served (no path traversal). If the file is missing, the request returns 404 and the UI may show a CSS fallback. Omit `scenery` or use `default` to request `default.png` (or `default.jpg`) from the same directory.
 
+**Scene audio**: Each node can optionally set an **audio** value so the scene plays a looping ambient track. Audio files live in `stories/<story_id>/audio/`. In the YAML, set `audio` to the **filename** (with or without extension), e.g. `audio: "forest_ambient"` or `audio: "forest_ambient.mp3"`. The server serves them at `/audio/<storyID>/<filename>` and tries `.mp3`, `.ogg`, `.wav`, and `.m4a` if no extension is given. Only files under `stories/<story_id>/audio/` are served (no path traversal). The UI uses a single shared audio element: when you navigate to a node with `audio` set, the previous track stops and the new one plays (looped, at 50% volume). Omit `audio` for no scene music.
+
 **Entry animations**: Optional `entry_animation` plays when entering the node (e.g. going through a door):
 
 - `door_open` — short “door opening” effect when entering an interior

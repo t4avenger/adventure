@@ -38,6 +38,7 @@ type Story struct {
 type Node struct {
 	Text           string   `yaml:"text"`
 	Scenery        string   `yaml:"scenery"`         // scenery image filename (with or without extension) in story's scenery/ dir e.g. "forest", "forest.png"; empty = default
+	Audio          string   `yaml:"audio"`           // optional audio filename (with or without extension) in story's audio/ dir e.g. "forest_ambient"; empty = none
 	EntryAnimation string   `yaml:"entry_animation"` // e.g. "door_open"; empty = none
 	Choices        []Choice `yaml:"choices"`
 	Effects        []Effect `yaml:"effects"`

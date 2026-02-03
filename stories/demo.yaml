@@ -4,6 +4,7 @@ nodes:
   camp:
     text: "You wake at the edge of a quiet camp. The woods watch you."
     scenery: "clearing"
+    audio: "burning_campfire"
     choices:
       - key: "north"
         text: "Head north into the trees"

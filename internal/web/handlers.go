@@ -33,6 +33,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/play", s.handlePlay)
 	mux.HandleFunc("/map", s.handleMap)
 	mux.HandleFunc("/scenery/", s.handleScenery)
+	mux.HandleFunc("/audio/", s.handleAudio)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	return mux
 }

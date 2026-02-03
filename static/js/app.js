@@ -138,11 +138,75 @@
     }
   }
 
+  var sceneAudio = null;
+  var sceneAudioUrl = null;
+  var sceneAudioUnlockHandler = null;
+
+  function getSceneAudio() {
+    if (!sceneAudio) {
+      sceneAudio = typeof Audio !== 'undefined' ? new Audio() : null;
+    }
+    return sceneAudio;
+  }
+
+  function scheduleSceneAudioUnlock(audio) {
+    if (sceneAudioUnlockHandler) return;
+    sceneAudioUnlockHandler = function () {
+      sceneAudioUnlockHandler = null;
+      audio.play().catch(function () {});
+    };
+    document.body.addEventListener('click', sceneAudioUnlockHandler, { capture: true, once: true });
+  }
+
+  function clearSceneAudioUnlock() {
+    if (!sceneAudioUnlockHandler) return;
+    document.body.removeEventListener('click', sceneAudioUnlockHandler, true);
+    sceneAudioUnlockHandler = null;
+  }
+
+  function updateSceneAudio() {
+    const gameEl = document.querySelector('#game');
+    const container = gameEl ? gameEl.querySelector('[data-audio-url]') : null;
+    const url = container ? container.getAttribute('data-audio-url') : null;
+    const audio = getSceneAudio();
+    if (!audio) return;
+    try {
+      if (url) {
+        if (sceneAudioUrl !== url) {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = url;
+          sceneAudioUrl = url;
+        }
+        audio.loop = true;
+        audio.volume = 0.5;
+        const playPromise = audio.play();
+        if (playPromise && playPromise.catch) {
+          playPromise.catch(function () {
+            scheduleSceneAudioUnlock(audio);
+          });
+        }
+      } else {
+        if (sceneAudioUrl) {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.removeAttribute('src');
+          audio.load();
+          sceneAudioUrl = null;
+        }
+        clearSceneAudioUnlock();
+      }
+    } catch (e) {
+      /* HTMLMediaElement.pause/load not implemented in some environments (e.g. jsdom) */
+    }
+  }
+
   function runUpdaters() {
     updateSidebarStats();
     updateEnemySidebar();
     updatePlayerDice();
     updateEnemyDice();
+    updateSceneAudio();
   }
 
   /** Run dice roll animation on sidebar dice (used after OOB swap; server already set content). */
@@ -169,12 +233,11 @@
     runUpdaters();
     document.body.addEventListener('htmx:afterSwap', function (evt) {
       if (evt.detail && evt.detail.target && evt.detail.target.id !== 'game') return;
+      runUpdaters();
       const xhr = evt.detail && evt.detail.xhr;
       const isOOB = xhr && xhr.getResponseHeader && xhr.getResponseHeader('X-Adventure-OOB') === 'true';
       if (isOOB) {
         setTimeout(animateSidebarDice, 10);
-      } else {
-        setTimeout(runUpdaters, 10);
       }
     });
   }
@@ -186,6 +249,7 @@
     updatePlayerDice,
     updateEnemyDice,
     runUpdaters,
+    updateSceneAudio,
     animateSidebarDice,
     init
   };

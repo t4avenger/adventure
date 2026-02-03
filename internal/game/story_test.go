@@ -170,6 +170,7 @@ nodes:
   inside:
     text: "You step inside."
     scenery: "house_inside"
+    audio: "house_ambient"
     entry_animation: "door_open"
     ending: true
 `
@@ -204,6 +205,9 @@ nodes:
 	}
 	if inside.EntryAnimation != "door_open" {
 		t.Errorf("Expected entry_animation 'door_open', got %q", inside.EntryAnimation)
+	}
+	if inside.Audio != "house_ambient" {
+		t.Errorf("Expected audio 'house_ambient', got %q", inside.Audio)
 	}
 }
 
