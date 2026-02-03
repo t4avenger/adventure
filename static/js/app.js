@@ -139,12 +139,29 @@
   }
 
   var sceneAudio = null;
+  var sceneAudioUrl = null;
+  var sceneAudioUnlockHandler = null;
 
   function getSceneAudio() {
     if (!sceneAudio) {
       sceneAudio = typeof Audio !== 'undefined' ? new Audio() : null;
     }
     return sceneAudio;
+  }
+
+  function scheduleSceneAudioUnlock(audio) {
+    if (sceneAudioUnlockHandler) return;
+    sceneAudioUnlockHandler = function () {
+      sceneAudioUnlockHandler = null;
+      audio.play().catch(function () {});
+    };
+    document.body.addEventListener('click', sceneAudioUnlockHandler, { capture: true, once: true });
+  }
+
+  function clearSceneAudioUnlock() {
+    if (!sceneAudioUnlockHandler) return;
+    document.body.removeEventListener('click', sceneAudioUnlockHandler, true);
+    sceneAudioUnlockHandler = null;
   }
 
   function updateSceneAudio() {
@@ -155,23 +172,29 @@
     if (!audio) return;
     try {
       if (url) {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.src = url;
+        if (sceneAudioUrl !== url) {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = url;
+          sceneAudioUrl = url;
+        }
         audio.loop = true;
         audio.volume = 0.5;
-        audio.play().catch(function () {
-          var once = function () {
-            document.body.removeEventListener('click', once, true);
-            audio.play().catch(function () {});
-          };
-          document.body.addEventListener('click', once, true);
-        });
+        const playPromise = audio.play();
+        if (playPromise && playPromise.catch) {
+          playPromise.catch(function () {
+            scheduleSceneAudioUnlock(audio);
+          });
+        }
       } else {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.removeAttribute('src');
-        audio.load();
+        if (sceneAudioUrl) {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.removeAttribute('src');
+          audio.load();
+          sceneAudioUrl = null;
+        }
+        clearSceneAudioUnlock();
       }
     } catch (e) {
       /* HTMLMediaElement.pause/load not implemented in some environments (e.g. jsdom) */
