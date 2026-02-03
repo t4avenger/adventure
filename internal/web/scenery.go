@@ -38,42 +38,10 @@ func (s *Server) handleScenery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Path must be /scenery/<storyID>/<filename> (exactly two segments after /scenery/)
-	path := strings.TrimPrefix(r.URL.Path, "/scenery/")
-	path = strings.Trim(path, "/")
-	parts := strings.SplitN(path, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+	candidates, ok := s.storyAssetCandidates("/scenery/", r.URL.Path, "scenery", sceneryExtensions)
+	if !ok {
 		http.NotFound(w, r)
 		return
-	}
-	storyID, filename := parts[0], parts[1]
-
-	// Validate storyID against loaded stories
-	if s.Engine == nil || s.Engine.Stories == nil || s.Engine.Stories[storyID] == nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	// Safe filename: single segment, no path traversal
-	safeFilename := filepath.Clean(filename)
-	if safeFilename == "" || safeFilename == "." || strings.Contains(safeFilename, "..") ||
-		filepath.IsAbs(safeFilename) || strings.Contains(safeFilename, string(filepath.Separator)) {
-		http.NotFound(w, r)
-		return
-	}
-
-	baseDir := filepath.Join(s.storiesBase(), storyID, "scenery")
-	resolved := filepath.Join(baseDir, safeFilename)
-	rel, err := filepath.Rel(baseDir, resolved)
-	if err != nil || strings.Contains(rel, "..") {
-		http.NotFound(w, r)
-		return
-	}
-
-	// Try filename as-is, then with extensions
-	candidates := []string{resolved}
-	for _, ext := range sceneryExtensions {
-		candidates = append(candidates, resolved+ext)
 	}
 
 	var body []byte
@@ -98,7 +66,7 @@ func (s *Server) handleScenery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.Header().Set("Cache-Control", assetCacheControl)
 	if _, err := w.Write(body); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

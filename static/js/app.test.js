@@ -2,7 +2,7 @@
  * Unit tests for Adventure UI (sidebar and dice sync).
  * Run: npm test
  */
-const AdventureUI = require('./app.js');
+let AdventureUI;
 
 function buildDom() {
   const container = document.createElement('div');
@@ -49,6 +49,8 @@ describe('AdventureUI', function () {
   let container;
 
   beforeEach(function () {
+    jest.resetModules();
+    AdventureUI = require('./app.js');
     document.body.innerHTML = '';
     container = buildDom();
   });
@@ -165,6 +167,60 @@ describe('AdventureUI', function () {
       const enemyDiceArea = document.querySelector('.enemy-dice-area');
       AdventureUI.updateEnemyDice();
       expect(enemyDiceArea.style.display).toBe('none');
+    });
+  });
+
+  describe('updateSceneAudio', function () {
+    let mockAudio;
+
+    beforeEach(function () {
+      mockAudio = {
+        pause: jest.fn(),
+        load: jest.fn(),
+        currentTime: 0,
+        src: '',
+        loop: false,
+        volume: 1,
+        play: jest.fn(function () { return Promise.resolve(); }),
+        removeAttribute: jest.fn()
+      };
+      global.Audio = jest.fn(function () { return mockAudio; });
+    });
+
+    it('starts playback when data-audio-url is present', function () {
+      const game = document.getElementById('game');
+      game.innerHTML = '<div data-audio-url="/audio/demo/ambient"></div>';
+      AdventureUI.updateSceneAudio();
+      expect(global.Audio).toHaveBeenCalledTimes(1);
+      expect(mockAudio.src).toBe('/audio/demo/ambient');
+      expect(mockAudio.loop).toBe(true);
+      expect(mockAudio.volume).toBe(0.5);
+      expect(mockAudio.play).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not restart when URL is unchanged', function () {
+      const game = document.getElementById('game');
+      game.innerHTML = '<div data-audio-url="/audio/demo/ambient"></div>';
+      AdventureUI.updateSceneAudio();
+      mockAudio.pause.mockClear();
+      mockAudio.currentTime = 7;
+      AdventureUI.updateSceneAudio();
+      expect(mockAudio.pause).not.toHaveBeenCalled();
+      expect(mockAudio.currentTime).toBe(7);
+    });
+
+    it('stops playback and clears src when audio removed', function () {
+      const game = document.getElementById('game');
+      game.innerHTML = '<div data-audio-url="/audio/demo/ambient"></div>';
+      AdventureUI.updateSceneAudio();
+      mockAudio.pause.mockClear();
+      mockAudio.removeAttribute.mockClear();
+      mockAudio.load.mockClear();
+      game.innerHTML = '';
+      AdventureUI.updateSceneAudio();
+      expect(mockAudio.pause).toHaveBeenCalledTimes(1);
+      expect(mockAudio.removeAttribute).toHaveBeenCalledWith('src');
+      expect(mockAudio.load).toHaveBeenCalledTimes(1);
     });
   });
 

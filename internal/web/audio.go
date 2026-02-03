@@ -28,48 +28,30 @@ func (s *Server) handleAudio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := strings.TrimPrefix(r.URL.Path, "/audio/")
-	path = strings.Trim(path, "/")
-	parts := strings.SplitN(path, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		http.NotFound(w, r)
-		return
-	}
-	storyID, filename := parts[0], parts[1]
-
-	if s.Engine == nil || s.Engine.Stories == nil || s.Engine.Stories[storyID] == nil {
+	candidates, ok := s.storyAssetCandidates("/audio/", r.URL.Path, "audio", audioExtensions)
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 
-	safeFilename := filepath.Clean(filename)
-	if safeFilename == "" || safeFilename == "." || strings.Contains(safeFilename, "..") ||
-		filepath.IsAbs(safeFilename) || strings.Contains(safeFilename, string(filepath.Separator)) {
-		http.NotFound(w, r)
-		return
-	}
-
-	baseDir := filepath.Join(s.storiesBase(), storyID, "audio")
-	resolved := filepath.Join(baseDir, safeFilename)
-	rel, err := filepath.Rel(baseDir, resolved)
-	if err != nil || strings.Contains(rel, "..") {
-		http.NotFound(w, r)
-		return
-	}
-
-	candidates := []string{resolved}
-	for _, ext := range audioExtensions {
-		candidates = append(candidates, resolved+ext)
-	}
-
-	var body []byte
+	var file *os.File
+	var fileInfo os.FileInfo
+	var filePath string
 	var contentType string
 	for _, p := range candidates {
-		b, err := os.ReadFile(p) // #nosec G304 -- p is under validated baseDir (stories/<storyID>/audio)
+		f, err := os.Open(p) // #nosec G304 -- p is under validated baseDir (stories/<storyID>/audio)
 		if err != nil {
 			continue
 		}
-		body = b
+		info, err := f.Stat()
+		if err != nil || info.IsDir() {
+			_ = f.Close()
+			continue
+		}
+		file = f
+		fileInfo = info
+		filePath = p
+		contentType = contentTypeMP3
 		switch strings.ToLower(filepath.Ext(p)) {
 		case ".mp3":
 			contentType = contentTypeMP3
@@ -84,15 +66,13 @@ func (s *Server) handleAudio(w http.ResponseWriter, r *http.Request) {
 		}
 		break
 	}
-	if body == nil {
+	if file == nil {
 		http.NotFound(w, r)
 		return
 	}
+	defer file.Close()
 
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "public, max-age=3600")
-	if _, err := w.Write(body); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	w.Header().Set("Cache-Control", assetCacheControl)
+	http.ServeContent(w, r, filepath.Base(filePath), fileInfo.ModTime(), file)
 }
