@@ -169,6 +169,21 @@ describe('AdventureUI', function () {
   });
 
   describe('runUpdaters', function () {
+    beforeEach(function () {
+      global.Audio = jest.fn(function () {
+        return {
+          pause: function () {},
+          load: function () {},
+          currentTime: 0,
+          src: '',
+          loop: false,
+          volume: 1,
+          play: function () { return Promise.resolve(); },
+          removeAttribute: function () {}
+        };
+      });
+    });
+
     it('runs all updaters without throwing', function () {
       document.getElementById('game').innerHTML = '<div class="stats-update" data-strength="7" data-luck="7" data-health="12" style="display:none;"></div>';
       expect(function () { AdventureUI.runUpdaters(); }).not.toThrow();
