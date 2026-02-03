@@ -45,13 +45,14 @@ func (s *Server) handleAudio(w http.ResponseWriter, r *http.Request) {
 		}
 		info, err := f.Stat()
 		if err != nil || info.IsDir() {
-			_ = f.Close()
+			if closeErr := f.Close(); closeErr != nil {
+				_ = closeErr
+			}
 			continue
 		}
 		file = f
 		fileInfo = info
 		filePath = p
-		contentType = contentTypeMP3
 		switch strings.ToLower(filepath.Ext(p)) {
 		case ".mp3":
 			contentType = contentTypeMP3
@@ -70,7 +71,11 @@ func (s *Server) handleAudio(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			_ = err
+		}
+	}()
 
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Cache-Control", assetCacheControl)
