@@ -154,6 +154,69 @@ nodes:
 	}
 }
 
+func TestLoadStory_PromptChoice(t *testing.T) {
+	tmpDir := t.TempDir()
+	storyPath := filepath.Join(tmpDir, "prompt_story.yaml")
+
+	storyYAML := `start: "riddle"
+nodes:
+  riddle:
+    text: "Riddle"
+    choices:
+      - key: "answer"
+        text: "Answer"
+        prompt:
+          question: "What am I?"
+          placeholder: "Your answer"
+          answers:
+            - match: "echo"
+              next: "right"
+            - matches: ["shadow", "a shadow"]
+              next: "wrong"
+          defaultNext: "wrong"
+  right:
+    text: "Right"
+    ending: true
+`
+
+	err := os.WriteFile(storyPath, []byte(storyYAML), 0o600) //nolint:gosec // test file permissions are acceptable
+	if err != nil {
+		t.Fatalf("Failed to create test story file: %v", err)
+	}
+
+	story, err := LoadStory(storyPath)
+	if err != nil {
+		t.Fatalf("Unexpected error loading story: %v", err)
+	}
+
+	node := story.Nodes["riddle"]
+	if node == nil || len(node.Choices) != 1 {
+		t.Fatalf("Expected riddle node with one choice")
+	}
+	choice := node.Choices[0]
+	if choice.Prompt == nil {
+		t.Fatal("Expected prompt to be loaded")
+	}
+	if choice.Prompt.Question != "What am I?" {
+		t.Errorf("Expected question, got %q", choice.Prompt.Question)
+	}
+	if choice.Prompt.Placeholder != "Your answer" {
+		t.Errorf("Expected placeholder, got %q", choice.Prompt.Placeholder)
+	}
+	if len(choice.Prompt.Answers) != 2 {
+		t.Fatalf("Expected 2 answers, got %d", len(choice.Prompt.Answers))
+	}
+	if choice.Prompt.Answers[0].Match != "echo" || choice.Prompt.Answers[0].Next != rightNodeID {
+		t.Errorf("Expected first answer match 'echo' -> %q, got %+v", rightNodeID, choice.Prompt.Answers[0])
+	}
+	if len(choice.Prompt.Answers[1].Matches) != 2 || choice.Prompt.Answers[1].Next != wrongNodeID {
+		t.Errorf("Expected second answer matches -> %q, got %+v", wrongNodeID, choice.Prompt.Answers[1])
+	}
+	if choice.Prompt.DefaultNext != wrongNodeID {
+		t.Errorf("Expected defaultNext %q, got %q", wrongNodeID, choice.Prompt.DefaultNext)
+	}
+}
+
 func TestLoadStory_SceneryAndEntryAnimation(t *testing.T) {
 	tmpDir := t.TempDir()
 	storyPath := filepath.Join(tmpDir, "scenery_story.yaml")

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -158,6 +159,12 @@ func (e *Engine) CurrentNode(st *PlayerState) (*Node, error) {
 // ApplyChoice processes a player's choice, updating their state and
 // determining the next node in the story.
 func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, error) {
+	return e.ApplyChoiceWithAnswer(st, choiceKey, "")
+}
+
+// ApplyChoiceWithAnswer processes a player's choice and optional typed answer,
+// updating their state and determining the next node in the story.
+func (e *Engine) ApplyChoiceWithAnswer(st *PlayerState, choiceKey, answer string) (StepResult, error) {
 	node, err := e.CurrentNode(st)
 	if err != nil {
 		return StepResult{}, err
@@ -184,16 +191,24 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 		return StepResult{State: *st, ErrorMessage: "That choice doesn't exist."}, nil
 	}
 
-	// Apply node-level effects first (optional; here we only do choice effects + destination effects)
-	applyEffects(st, ch.Effects)
-
 	var lastRoll *int
 	var lastPlayerDice *[2]int
 	var lastEnemyDice *[2]int
 	var lastOutcome *string
 
 	next := ch.Next
-	if ch.Check != nil {
+	if ch.Prompt != nil {
+		promptNext, promptMsg := resolvePromptNext(ch.Prompt, answer, ch.Next)
+		if promptNext == "" {
+			return StepResult{State: *st, ErrorMessage: promptMsg}, nil
+		}
+		next = promptNext
+		applyEffects(st, ch.Effects)
+	} else {
+		// Apply node-level effects first (optional; here we only do choice effects + destination effects)
+		applyEffects(st, ch.Effects)
+	}
+	if ch.Check != nil && ch.Prompt == nil {
 		d1, d2 := roll2d6Ex()
 		roll := d1 + d2
 		lastRoll = &roll
@@ -220,7 +235,7 @@ func (e *Engine) ApplyChoice(st *PlayerState, choiceKey string) (StepResult, err
 	}
 
 	// Battle: multi-enemy (Enemies list) or legacy single enemy.
-	if ch.Battle != nil {
+	if ch.Battle != nil && ch.Prompt == nil {
 		battleNext := e.applyBattle(st, ch, choiceKey, &lastRoll, &lastOutcome, &lastPlayerDice, &lastEnemyDice)
 		if battleNext != "" {
 			next = battleNext
@@ -405,6 +420,69 @@ func (e *Engine) resolveBattleRound(st *PlayerState, enemyStrength, enemyHealth,
 // HasEnemies returns true if the player is in an active battle.
 func (st *PlayerState) HasEnemies() bool {
 	return len(st.Enemies) > 0
+}
+
+func resolvePromptNext(prompt *Prompt, answer, fallback string) (next, message string) {
+	if prompt == nil {
+		if fallback != "" {
+			return fallback, ""
+		}
+		return "", "No destination for that choice."
+	}
+
+	normalized := normalizeAnswer(answer)
+	if normalized == "" {
+		return "", promptFailureMessage(prompt, "Please enter an answer.")
+	}
+
+	for _, ans := range prompt.Answers {
+		if ans.Next == "" {
+			continue
+		}
+		if promptAnswerMatches(ans, normalized) {
+			return ans.Next, ""
+		}
+	}
+
+	if prompt.DefaultNext != "" {
+		return prompt.DefaultNext, ""
+	}
+	if fallback != "" {
+		return fallback, ""
+	}
+	return "", promptFailureMessage(prompt, "That does not seem right.")
+}
+
+func promptAnswerMatches(ans Answer, normalized string) bool {
+	if ans.Match != "" {
+		if normalizeAnswer(ans.Match) == normalized {
+			return true
+		}
+	}
+	for _, m := range ans.Matches {
+		if normalizeAnswer(m) == normalized {
+			return true
+		}
+	}
+	return false
+}
+
+func promptFailureMessage(prompt *Prompt, fallback string) string {
+	if prompt != nil && prompt.FailureMessage != "" {
+		return prompt.FailureMessage
+	}
+	return fallback
+}
+
+func normalizeAnswer(answer string) string {
+	answer = strings.ToLower(answer)
+	var b strings.Builder
+	for _, r := range answer {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsSpace(r) {
+			b.WriteRune(r)
+		}
+	}
+	return strings.Join(strings.Fields(b.String()), " ")
 }
 
 func checkRoll(st *PlayerState, c Check, roll int) (bool, error) {

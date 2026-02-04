@@ -52,6 +52,20 @@
         {{end}}
         {{else}}
         {{range .Node.Choices}}
+          {{if .Prompt}}
+          <li class="choice-prompt">
+            <form class="prompt-form"
+              hx-post="/play"
+              hx-target="#game"
+              hx-swap="innerHTML">
+              <div class="prompt-question">{{.Prompt.Question}}</div>
+              <input type="hidden" name="choice" value="{{.Key}}">
+              <input class="prompt-input" type="text" name="answer" autocomplete="off" spellcheck="false"
+                placeholder="{{if .Prompt.Placeholder}}{{.Prompt.Placeholder}}{{else}}Your answer{{end}}">
+              <button class="btn" type="submit">{{if .Text}}{{.Text}}{{else}}Answer{{end}}</button>
+            </form>
+          </li>
+          {{else}}
           <li>
             <button class="btn"
               hx-post="/play"
@@ -61,6 +75,7 @@
               {{.Text}}
             </button>
           </li>
+          {{end}}
         {{end}}
         {{end}}
       </ul>
