@@ -422,7 +422,7 @@ func (st *PlayerState) HasEnemies() bool {
 	return len(st.Enemies) > 0
 }
 
-func resolvePromptNext(prompt *Prompt, answer, fallback string) (string, string) {
+func resolvePromptNext(prompt *Prompt, answer, fallback string) (next string, message string) {
 	if prompt == nil {
 		if fallback != "" {
 			return fallback, ""

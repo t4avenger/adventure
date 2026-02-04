@@ -4,7 +4,11 @@ import (
 	"testing"
 )
 
-const safeNodeID = "safe"
+const (
+	safeNodeID  = "safe"
+	rightNodeID = "right"
+	wrongNodeID = "wrong"
+)
 
 func TestNewPlayer(t *testing.T) {
 	storyID := "test"
@@ -245,8 +249,8 @@ func TestApplyChoiceWithAnswer_PromptMatchRoutes(t *testing.T) {
 					},
 				},
 			},
-			"right": {Text: "Right"},
-			"wrong": {Text: "Wrong"},
+			rightNodeID: {Text: "Right"},
+			wrongNodeID: {Text: "Wrong"},
 		},
 	}
 
@@ -257,8 +261,8 @@ func TestApplyChoiceWithAnswer_PromptMatchRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	if result.State.NodeID != "right" {
-		t.Errorf("Expected NodeID 'right', got %q", result.State.NodeID)
+	if result.State.NodeID != rightNodeID {
+		t.Errorf("Expected NodeID %q, got %q", rightNodeID, result.State.NodeID)
 	}
 
 	player = NewPlayer("test", "riddle")
@@ -266,8 +270,8 @@ func TestApplyChoiceWithAnswer_PromptMatchRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	if result.State.NodeID != "wrong" {
-		t.Errorf("Expected NodeID 'wrong', got %q", result.State.NodeID)
+	if result.State.NodeID != wrongNodeID {
+		t.Errorf("Expected NodeID %q, got %q", wrongNodeID, result.State.NodeID)
 	}
 }
 
