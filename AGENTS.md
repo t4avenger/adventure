@@ -29,5 +29,5 @@ This repo is the Adventure game (Go + HTMX). Follow these conventions.
 
 ## References
 
-- `docs/HTMX_AND_JS_REFACTOR_PLAN.md`
+- HTMX and JS refactor plan (see internal design notes or team docs)
 - `make install-tools`, `make install-js`, `make check`
