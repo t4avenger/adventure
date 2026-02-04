@@ -275,6 +275,53 @@ func TestApplyChoiceWithAnswer_PromptMatchRoutes(t *testing.T) {
 	}
 }
 
+func TestApplyChoiceWithAnswer_PromptMatchesRoutes(t *testing.T) {
+	story := &Story{
+		Start: "riddle",
+		Nodes: map[string]*Node{
+			"riddle": {
+				Text: "Answer the riddle",
+				Choices: []Choice{
+					{
+						Key:  "answer",
+						Text: "Answer",
+						Prompt: &Prompt{
+							Question: "What am I?",
+							Answers: []Answer{
+								{Matches: []string{"shadow", "a shadow"}, Next: rightNodeID},
+							},
+							DefaultNext: wrongNodeID,
+						},
+					},
+				},
+			},
+			rightNodeID: {Text: "Right"},
+			wrongNodeID: {Text: "Wrong"},
+		},
+	}
+
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	for _, answer := range []string{"shadow", "a shadow", "  A Shadow "} {
+		player := NewPlayer("test", "riddle")
+		result, err := engine.ApplyChoiceWithAnswer(&player, "answer", answer)
+		if err != nil {
+			t.Fatalf("Unexpected error for answer %q: %v", answer, err)
+		}
+		if result.State.NodeID != rightNodeID {
+			t.Errorf("Expected NodeID %q for answer %q, got %q", rightNodeID, answer, result.State.NodeID)
+		}
+	}
+
+	player := NewPlayer("test", "riddle")
+	result, err := engine.ApplyChoiceWithAnswer(&player, "answer", "whisper")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if result.State.NodeID != wrongNodeID {
+		t.Errorf("Expected NodeID %q, got %q", wrongNodeID, result.State.NodeID)
+	}
+}
+
 func TestApplyChoiceWithAnswer_PromptMissingAnswerNoEffects(t *testing.T) {
 	story := &Story{
 		Start: "riddle",
