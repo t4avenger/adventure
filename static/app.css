@@ -583,6 +583,32 @@ html, body {
   align-items: center;
   max-width: 800px;
 }
+.choice-prompt {
+  width: 100%;
+}
+.prompt-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.prompt-question {
+  width: 100%;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #ddd;
+}
+.prompt-input {
+  padding: 10px 12px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #121212;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  min-width: 220px;
+}
 .btn { 
   padding: 12px 20px; 
   border-radius: 8px; 

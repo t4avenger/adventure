@@ -225,6 +225,97 @@ func TestApplyChoice_WithCheck(t *testing.T) {
 	}
 }
 
+func TestApplyChoiceWithAnswer_PromptMatchRoutes(t *testing.T) {
+	story := &Story{
+		Start: "riddle",
+		Nodes: map[string]*Node{
+			"riddle": {
+				Text: "Answer the riddle",
+				Choices: []Choice{
+					{
+						Key:  "answer",
+						Text: "Answer",
+						Prompt: &Prompt{
+							Question: "What am I?",
+							Answers: []Answer{
+								{Match: "echo", Next: "right"},
+							},
+							DefaultNext: "wrong",
+						},
+					},
+				},
+			},
+			"right": {Text: "Right"},
+			"wrong": {Text: "Wrong"},
+		},
+	}
+
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "riddle")
+
+	result, err := engine.ApplyChoiceWithAnswer(&player, "answer", "  Echo ")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if result.State.NodeID != "right" {
+		t.Errorf("Expected NodeID 'right', got %q", result.State.NodeID)
+	}
+
+	player = NewPlayer("test", "riddle")
+	result, err = engine.ApplyChoiceWithAnswer(&player, "answer", "wind")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if result.State.NodeID != "wrong" {
+		t.Errorf("Expected NodeID 'wrong', got %q", result.State.NodeID)
+	}
+}
+
+func TestApplyChoiceWithAnswer_PromptMissingAnswerNoEffects(t *testing.T) {
+	story := &Story{
+		Start: "riddle",
+		Nodes: map[string]*Node{
+			"riddle": {
+				Text: "Answer the riddle",
+				Choices: []Choice{
+					{
+						Key:  "answer",
+						Text: "Answer",
+						Effects: []Effect{
+							{Op: "add", Stat: "health", Value: -1},
+						},
+						Prompt: &Prompt{
+							Question: "What am I?",
+							Answers: []Answer{
+								{Match: "echo", Next: "right"},
+							},
+						},
+					},
+				},
+			},
+			"right": {Text: "Right"},
+		},
+	}
+
+	engine := &Engine{Stories: map[string]*Story{"test": story}}
+	player := NewPlayer("test", "riddle")
+	player.Stats.Health = 10
+
+	result, err := engine.ApplyChoiceWithAnswer(&player, "answer", "")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if result.State.NodeID != "riddle" {
+		t.Errorf("Expected NodeID to remain 'riddle', got %q", result.State.NodeID)
+	}
+	if result.State.Stats.Health != 10 {
+		t.Errorf("Expected Health 10 to remain unchanged, got %d", result.State.Stats.Health)
+	}
+	if result.ErrorMessage == "" {
+		t.Error("Expected error message for missing answer")
+	}
+}
+
 func TestApplyChoice_InvalidChoice(t *testing.T) {
 	story := &Story{
 		Start: "start",

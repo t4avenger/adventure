@@ -27,6 +27,9 @@ nodes:
             value: 1
             clampMax: 12
         next: "camp"
+      - key: "riddle"
+        text: "Approach the rune stone"
+        next: "riddle_stone"
 
   forest:
     text: "The forest is cold and still. A shadow moves."
@@ -56,6 +59,20 @@ nodes:
     text: "You reach a moonlit clearing. For now, you're safe. (END)"
     scenery: "clearing"
     ending: true
+
+  riddle_stone:
+    text: "A rune stone blocks a narrow path. A whispering voice asks a riddle."
+    scenery: "clearing"
+    choices:
+      - key: "answer"
+        text: "Speak your answer"
+        prompt:
+          question: "I speak without a mouth and hear without ears. What am I?"
+          placeholder: "Your answer"
+          answers:
+            - match: "echo"
+              next: "clearing"
+          defaultNext: "ambush"
 
   ambush:
     text: "A creature lunges from the dark! You take 2 damage. (END)"

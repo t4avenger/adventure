@@ -261,6 +261,7 @@ nodes:
 Choices can include:
 - **Simple navigation**: `next` field
 - **Stat checks**: `check` with `onSuccessNext` and `onFailureNext`
+- **Prompted answers**: `prompt` with `answers` mapping to `next` nodes
 - **Effects**: Stat modifications applied when choice is selected
 - **Battles**: `battle` block for combat encounters
 - **Mode**: `battle_attack` or `battle_luck` for combat actions
@@ -294,6 +295,27 @@ battle:
 ```
 
 Battle choices are generated automatically (e.g. “Attack Goblin”, “Luck Orc”, “Run away”). Horde strength is the **mean** of all enemy strengths; health is the sum.
+
+### Prompted answers
+
+Use a `prompt` block on a choice to accept a typed answer and route to a different node.
+Answers are normalized (trimmed, case-insensitive, punctuation ignored). If no
+answer matches, `defaultNext` is used; otherwise `next` acts as a fallback.
+
+```yaml
+choices:
+  - key: "riddle"
+    text: "Answer the riddle"
+    prompt:
+      question: "I speak without a mouth and hear without ears. What am I?"
+      placeholder: "Your answer"
+      answers:
+        - match: "echo"
+          next: "riddle_success"
+        - matches: ["shadow", "a shadow"]
+          next: "riddle_wrong"
+      defaultNext: "riddle_wrong"
+```
 
 ### Effects
 

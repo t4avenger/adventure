@@ -55,8 +55,9 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	choice := r.FormValue("choice")
+	answer := r.FormValue("answer")
 
-	res, err := s.Engine.ApplyChoice(&st, choice)
+	res, err := s.Engine.ApplyChoiceWithAnswer(&st, choice, answer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

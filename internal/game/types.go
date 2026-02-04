@@ -56,6 +56,24 @@ type Choice struct {
 	OnFailureNext string   `yaml:"onFailureNext"`
 	Effects       []Effect `yaml:"effects"`
 	Battle        *Battle  `yaml:"battle"`
+	Prompt        *Prompt  `yaml:"prompt"`
+}
+
+// Prompt defines a question that expects a typed answer.
+// Answers route to different nodes; DefaultNext is used when no match is found.
+type Prompt struct {
+	Question       string   `yaml:"question"`
+	Placeholder    string   `yaml:"placeholder"`
+	Answers        []Answer `yaml:"answers"`
+	DefaultNext    string   `yaml:"defaultNext"`
+	FailureMessage string   `yaml:"failureMessage"`
+}
+
+// Answer maps one or more expected strings to a destination node.
+type Answer struct {
+	Match   string   `yaml:"match"`
+	Matches []string `yaml:"matches"`
+	Next    string   `yaml:"next"`
 }
 
 // Check defines a stat check that must be passed to proceed.
