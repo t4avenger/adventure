@@ -301,6 +301,8 @@ Battle choices are generated automatically (e.g. “Attack Goblin”, “Luck Or
 Use a `prompt` block on a choice to accept a typed answer and route to a different node.
 Answers are normalized (trimmed, case-insensitive, punctuation ignored). If no
 answer matches, `defaultNext` is used; otherwise `next` acts as a fallback.
+`prompt` is mutually exclusive with `check` and `battle` on the same choice:
+when `prompt` is present, `check` and `battle` are ignored.
 
 ```yaml
 choices:
