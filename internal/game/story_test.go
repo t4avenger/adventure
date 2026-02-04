@@ -206,14 +206,14 @@ nodes:
 	if len(choice.Prompt.Answers) != 2 {
 		t.Fatalf("Expected 2 answers, got %d", len(choice.Prompt.Answers))
 	}
-	if choice.Prompt.Answers[0].Match != "echo" || choice.Prompt.Answers[0].Next != "right" {
-		t.Errorf("Expected first answer match 'echo' -> 'right', got %+v", choice.Prompt.Answers[0])
+	if choice.Prompt.Answers[0].Match != "echo" || choice.Prompt.Answers[0].Next != rightNodeID {
+		t.Errorf("Expected first answer match 'echo' -> %q, got %+v", rightNodeID, choice.Prompt.Answers[0])
 	}
-	if len(choice.Prompt.Answers[1].Matches) != 2 || choice.Prompt.Answers[1].Next != "wrong" {
-		t.Errorf("Expected second answer matches -> 'wrong', got %+v", choice.Prompt.Answers[1])
+	if len(choice.Prompt.Answers[1].Matches) != 2 || choice.Prompt.Answers[1].Next != wrongNodeID {
+		t.Errorf("Expected second answer matches -> %q, got %+v", wrongNodeID, choice.Prompt.Answers[1])
 	}
-	if choice.Prompt.DefaultNext != "wrong" {
-		t.Errorf("Expected defaultNext 'wrong', got %q", choice.Prompt.DefaultNext)
+	if choice.Prompt.DefaultNext != wrongNodeID {
+		t.Errorf("Expected defaultNext %q, got %q", wrongNodeID, choice.Prompt.DefaultNext)
 	}
 }
 
