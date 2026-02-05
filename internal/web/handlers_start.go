@@ -62,7 +62,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			Value:    id,
 			Path:     "/",
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   r.TLS != nil,
 			SameSite: http.SameSiteLaxMode,
 		})
 	}
@@ -73,13 +73,24 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no adventure available", 500)
 		return
 	}
-	st := game.NewPlayer(defaultID, defaultStory.Start)
-	stats, statDice := game.RollStatsDetailed()
-	st.Stats = stats
 
-	if err := s.Store.Put(ctx, id, st); err != nil {
-		http.Error(w, "failed to save state", 500)
+	var st game.PlayerState
+	var statDice [3][2]int
+	existing, ok, err := s.Store.Get(ctx, id)
+	if err != nil {
+		http.Error(w, "failed to load session", 500)
 		return
+	}
+	if ok {
+		st = existing
+		_, statDice = game.RollStatsDetailed()
+	} else {
+		st = game.NewPlayer(defaultID, defaultStory.Start)
+		st.Stats, statDice = game.RollStatsDetailed()
+		if err := s.Store.Put(ctx, id, st); err != nil {
+			http.Error(w, "failed to save state", 500)
+			return
+		}
 	}
 
 	vm := StartViewModel{
@@ -176,18 +187,20 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 				Value:    sessionIDFromForm,
 				Path:     "/",
 				HttpOnly: true,
-				Secure:   true,
+				Secure:   r.TLS != nil,
 				SameSite: http.SameSiteLaxMode,
 			})
 			storyID := r.FormValue("story_id")
 			if s.Engine.Stories[storyID] != nil {
 				st.StoryID = storyID
 				st.NodeID = s.Engine.Stories[storyID].Start
+				st.VisitedNodes = []string{st.NodeID}
 			} else {
 				defaultID := s.defaultStoryID()
 				if s.Engine.Stories[defaultID] != nil {
 					st.StoryID = defaultID
 					st.NodeID = s.Engine.Stories[defaultID].Start
+					st.VisitedNodes = []string{st.NodeID}
 				}
 			}
 			name := strings.TrimSpace(r.FormValue("name"))
@@ -209,6 +222,7 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), 500)
 				return
 			}
+			vm.SessionID = sessionIDFromForm
 			w.Header().Set("X-Adventure-OOB", "true")
 			if err := s.Tmpl.ExecuteTemplate(w, "game_response.html", vm); err != nil {
 				http.Error(w, err.Error(), 500)
@@ -257,6 +271,7 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	vm.SessionID = sessionID
 	w.Header().Set("X-Adventure-OOB", "true")
 	if err := s.Tmpl.ExecuteTemplate(w, "game_response.html", vm); err != nil {
 		http.Error(w, "failed to render template", 500)

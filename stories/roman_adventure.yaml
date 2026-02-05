@@ -1,0 +1,370 @@
+# Roman Fight — converted from Twine (Harlowe) for testing
+# Original: "Roman Fight" by Twine 2.11.1
+title: "Roman Adventure"
+start: "introduction"
+
+nodes:
+  introduction:
+    text: |
+      You are a weary traveller in Gaul, your boots caked with mud and your body aching from the march. By chance or fate, you have attached yourself to the Roman army as it pushes deeper into foreign land. Like many others, you carry a private hope: to one day glimpse Julius Caesar, the man whose name is already spoken with fear and reverence.
+
+      At last, the column grinds to a halt. Orders are barked. Stakes are driven into the earth. Fires are lit as the camp takes shape with practised efficiency. The smell of smoke and boiling grain hangs heavy in the air.
+
+      A short distance away, a group of legionaries you spoke with earlier sit hunched around a small fire, helmets set aside as they cook their evening meal. Laughter is brief and low. No one here relaxes for long. You turn toward them, drawn by the promise of warmth and company.
+
+      Then you see him.
+
+      A lone figure moves through the camp, flanked by shadows and torchlight. He walks with calm purpose, and soldiers step aside without being told. Even at a distance, his presence is unmistakable.
+
+      Caesar.
+
+      To approach him uninvited would be dangerous. To ignore the chance may haunt you forever.
+    scenery: "introduction"
+    choices:
+      - key: "soldiers"
+        text: "Carry on to the soldiers and the fire"
+        next: "sitting_by_the_fire"
+      - key: "caesar"
+        text: "Follow Caesar through the camp, risking notice in the hope of a word with him"
+        next: "spy_or_friend"
+
+  sitting_by_the_fire:
+    text: |
+      You approach the soldiers and offer a greeting. After a brief pause, one of them nods and makes room by the fire. A wooden bowl is thrust into your hands, and you share what remains of your mead in return. The exchange is simple and unceremonious, but the warmth of the fire seeps into your bones.
+
+      As the food is eaten, talk turns to the march ahead. Tomorrow brings battle. The men speak of it plainly, as soldiers always do. You find yourself recounting fights from your own past — hard marches, desperate clashes, and narrow escapes.
+
+      Laughter follows. They eye your worn clothes and tired frame, amused by the idea that a traveller like you could have stood in such battles. You let them laugh. There is no need to prove yourself.
+
+      Then one of the legionaries rises to his feet.
+
+      "If you are such a fighter," he says, "stand with us tomorrow."
+
+      The fire crackles. A few smiles fade. The challenge hangs in the air.
+    scenery: "sitting_by_the_fire"
+    audio: "burning_campfire"
+    choices:
+      - key: "accept"
+        text: "Accept the offer and march to battle with them at dawn"
+        next: "find_rest"
+      - key: "duel"
+        text: "Decline the battle, but offer a duel to first blood instead"
+        next: "first_blood"
+
+  spy_or_friend:
+    text: |
+      You spot the tent you believe Caesar entered and move toward it with care. Two guards stand watch at the entrance, their armour unfamiliar. You hesitate, then circle wide, slipping toward the rear of the tent in the hope of overhearing something — anything — to confirm your suspicion.
+
+      You are almost close enough to listen when steel flashes in the torchlight.
+
+      Soldiers surge from the shadows, blades drawn, hands rough as they seize you. Demands are shouted. Accusations follow. No one listens to your explanations.
+
+      Roll for Luck.
+    scenery: "spy_or_friend"
+    choices:
+      - key: "luck"
+        text: "Roll for Luck"
+        check:
+          stat: "luck"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "the_march_to_battle"
+        onFailureNext: "beheaded"
+
+  find_rest:
+    text: |
+      You accept the offer without ceremony. The legionary gives a short nod — nothing more is needed. The matter is settled.
+
+      You finish your meal in silence and leave the fire behind. Around you, the camp settles into uneasy rest. Armour is checked. Blades are laid close at hand. Tomorrow's work weighs heavily on every man here.
+
+      You move deeper into the camp, searching for a place to sleep. As you do, you remember the direction you saw Caesar take earlier, disappearing among the command tents and torchlit paths.
+    scenery: "find_rest"
+    choices:
+      - key: "rest"
+        text: "Find a place to rest and gather your strength for the coming battle (Gain 1 Strength)"
+        effects:
+          - op: "add"
+            stat: "strength"
+            value: 1
+            clampMin: 1
+            clampMax: 12
+        next: "the_march_to_battle"
+      - key: "trace_caesar"
+        text: "Try to trace Caesar's steps through the camp, risking trouble on the eve of battle"
+        next: "spy_or_friend"
+
+  first_blood:
+    text: |
+      The legionaries lead you away from the fire to an open patch of ground, far enough from the camp that no officer will take notice. A loose ring forms around you, faces hard with anticipation.
+
+      Steel is drawn. Your opponent steps forward, shield low, blade steady. This is not a game, and there will be no mercy if you falter.
+
+      The signal is given.
+
+      You fight, each strike meant to draw blood.
+    scenery: "first_blood"
+    audio: "duel"
+    choices:
+      - key: "fight"
+        text: "Fight (Strength check)"
+        check:
+          stat: "strength"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "caught"
+        onFailureNext: "medical"
+
+  the_march_to_battle:
+    text: |
+      You are woken before dawn. Orders are barked, and the column begins to move. The air is cold, biting at your lungs as the army marches toward the battlefield.
+
+      Ahead of you, the Roman legions form with practised precision. Shields lock. Standards rise. The sight is formidable, terrifying in its discipline. You take your place among the legionaries as the column advances, iron-shod boots striking the earth in unison.
+
+      Across the field, the Gauls hurl insults and screams, their voices wild and defiant. Then, suddenly, the noise dies away.
+
+      The Roman column halts.
+
+      For a heartbeat, the world seems to hold its breath.
+
+      Then the order comes, and the line surges forward. In the blink of an eye, you crash into the enemy before you — a towering Gaul, broader and stronger than any man you have ever faced.
+
+      You fight.
+    scenery: "the_march_to_battle"
+    audio: "march_to_battle"
+    choices:
+      - key: "fight"
+        text: "Fight (Strength check)"
+        mode: "battle_attack"
+        battle:
+          enemyName: "Gaul"
+          enemyStrength: 12
+          enemyHealth: 3
+          onVictoryNext: "the_eve_of_battle"
+          onDefeatNext: "injured"
+      - key: "run"
+        text: "Run away"
+        next: "edge_of_woods"
+        
+
+  beheaded:
+    text: |
+      The woods are dark and bitterly cold. Your skin crawls as you are forced to your knees, damp earth pressing into your palms.
+
+      You hear the scrape of steel being drawn.
+
+      There is no trial. No last words.
+
+      The blow comes swiftly, and darkness takes you as your head falls from your shoulders.
+
+      Your adventure ends here.
+    scenery: "beheaded"
+    ending: true
+
+  the_eve_of_battle:
+    text: |
+      The fighting finally ebbs, and the enemy is driven back. Exhausted and bloodied, the army withdraws to safer ground. Around you, men slump where they stand, too tired to speak, the field behind them strewn with the cost of victory.
+
+      You sit among the warriors who fought beside you that day. No words are exchanged, but a few nods are given — recognition earned, not offered lightly.
+
+      Before long, a Roman general approaches. His armour is scarred, his expression unreadable. He studies you for a moment, then speaks.
+
+      Your actions in the battle have been noted. In gratitude for your service, he offers you a place in the Roman army — not as a follower, but as one of its soldiers.
+    scenery: "the_eve_of_battle"
+    choices:
+      - key: "accept"
+        text: "Accept the offer and bind your fate to Rome"
+        next: "becoming_a_roman_soldier"
+      - key: "refuse"
+        text: "Politely refuse, rest for the night, and slip away toward the woods before dawn"
+        next: "a_path_in_the_woods"
+
+  injured:
+    text: |
+      The Gaul's blow sends you crashing to the ground. Mud and blood smear beneath you as the battle rages on, uncaring.
+
+      You try to draw breath, but your lungs refuse to answer. The noise of the fight fades to a distant roar as darkness closes in.
+
+      You close your eyes for the last time.
+
+      Your adventure ends here.
+    scenery: "injured"
+    ending: true
+
+  edge_of_woods:
+    text: |
+      You turn and run, leaving the clash of shields and screams behind you. Branches tear at your clothes as you reach the edge of the woods, heart pounding, breath burning in your chest. If you can just disappear among the trees, you might yet live.
+
+      A shout rings out behind you.
+
+      One of the legionaries has seen you flee. Armour clattering, sword drawn, he gives chase without hesitation. There is no forgiveness for cowards in a Roman army.
+
+      Roll for Luck.
+    scenery: "edge_of_woods"
+    choices:
+      - key: "luck"
+        text: "Roll for Luck"
+        check:
+          stat: "luck"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "a_path_in_the_woods"
+        onFailureNext: "beheaded"
+
+  a_path_in_the_woods:
+    text: |
+      You follow the narrow woodland path until you notice the signs — deep boot prints, snapped branches, churned mud. A large force has passed this way recently, marching in numbers.
+
+      It cannot be the Roman army. Their tracks would be ordered, their trail disciplined. These are heavy, careless footprints.
+
+      Gauls.
+
+      You move cautiously, following the disturbed ground. Before long you hear them — the distant murmur of many voices, rough laughter, the clatter of weapons and gear. You cannot understand their language, but there is no mistaking the sound of a warband on the move.
+
+      Something is happening here. Something close.
+
+      Part of you knows you should turn back. If they catch you, there will be no mercy.
+    scenery: "a_path_in_the_woods"
+    choices:
+      - key: "follow"
+        text: "Follow the Gauls through the woods, keeping to the shadows"
+        next: "gaul_treachery"
+      - key: "turn_away"
+        text: "Turn away and continue your journey"
+        next: "travel_home"
+
+  becoming_a_roman_soldier:
+    text: |
+      Your future is decided. From this day on, where the Roman army marches, you must march with it. Orders will be obeyed, battles fought, and discipline enforced without mercy.
+
+      You never did meet Caesar face to face. Some chances are not meant to be taken.
+
+      Still, you survive. And in time, you will have stories to tell — of blood, iron, and the day you earned your place among Rome's soldiers.
+
+      Your adventure ends here.
+    scenery: "becoming_a_roman_soldier"
+    audio: "becoming_a_roman_soldier"
+    ending: true
+
+  caught:
+    text: |
+      You trade blows with the legionary, parrying and testing his guard, waiting for an opening. At last, you see it. You strike quickly, drawing a shallow cut across his left hand.
+
+      Blood spills. The legionary steps back and raises his hand in surrender. He meets your gaze and gives a short nod. The duel is over. You have won.
+
+      As you turn to return to the camp, a voice cuts through the gathering.
+
+      An officer has been watching from the shadows. He strides forward, expression hard, and orders the injured legionary away to be seen by the medics. His attention then settles on you.
+
+      He demands to know why a stranger has drawn blood from one of his men. After a moment's thought, he offers you a choice.
+
+      Answer a simple riddle, and you may leave the camp without further trouble. Fail, and you will march with the army tomorrow to repay the insult.
+
+      He asks:
+
+      I march without legs,
+      I bite without teeth.
+      I drink deep in battle,
+      Yet die when I sleep.
+
+      What am I?
+    choices:
+      - key: "answer"
+        text: "Speak your answer"
+        prompt:
+          question: "What am I?"
+          placeholder: "Your answer"
+          answers:
+            - match: "fire"
+              next: "head_to_woods"
+          defaultNext: "the_march_to_battle"
+
+  medical:
+    text: |
+      You trade blows with the legionary, parrying and testing his guard, waiting for an opening. At last, you see it and strike — but he reads your move. His shield turns your blade aside, and his counter-stroke bites deep into your thigh.
+
+      Blood spills onto the ground. The legionary steps back at once, concern crossing his face. The wound is deeper than he intended.
+
+      Roll for Luck.
+    scenery: "medical"
+    effects:
+      - op: "add"
+        stat: "health"
+        value: -1
+    choices:
+      - key: "luck"
+        text: "Roll for Luck"
+        check:
+          stat: "luck"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "good_fun"
+        onFailureNext: "camp_medic"
+
+  head_to_woods:
+    text: |
+      Realising you have outstayed your welcome, you slip away from the camp and make for the woods. The sounds of the army fade behind you, replaced by the quiet creak of trees and the distant call of night creatures.
+
+      You rest for a short while, but sleep does not come easily. The day's events weigh heavily on you, and unease gnaws at your thoughts.
+    scenery: "head_to_woods"
+    effects:
+      - op: "add"
+        stat: "luck"
+        value: -1
+        clampMin: 1
+    choices:
+      - key: "next"
+        text: "Continue"
+        next: "a_path_in_the_woods"
+
+  good_fun:
+    text: |
+      You press your hand to the wound and realise it is not as bad as it first appeared. From your pack you tear a strip of cloth and bind the cut tightly, gritting your teeth as you finish the knot.
+
+      You nod to the legionary in acknowledgement of his victory. He returns the gesture, and the matter is settled without further words.
+
+      Together you return to the campfire. There is more food, more drink, and for a short while the tension fades. You rest as best you can.
+
+      At dawn, as the army marches toward its fate, you turn away from the road and head for the woods to continue your journey alone.
+    scenery: "good_fun"
+    choices:
+      - key: "next"
+        text: "Continue"
+        next: "a_path_in_the_woods"
+
+  camp_medic:
+    text: |
+      You are dragged to the camp medic — a broad man the soldiers call the Butcher. He takes one look at your leg and says nothing. His eyes are flat, practical, and without sympathy.
+
+      He prods the wound once, then nods grimly. There is no time for careful work. No herbs. No stitching. Only necessity.
+
+      Two men hold you down.
+
+      The saw bites into flesh and bone. The pain is blinding. When it is done, you are left shaking in the dirt, staring at the bloody stump where your leg once was.
+
+      At dawn, the army marches away without looking back. You are left at the edge of the woods, crippled, alone, and with no future in Rome's shadow.
+
+      Your adventure ends here.
+    scenery: "camp_medic"
+    ending: true
+
+  gaul_treachery:
+    text: |
+      You follow the Gauls into the shadows. The passage was left blank in the original story — your fate here is left to the woods and the war.
+
+      Your adventure ends here.
+    ending: true
+
+  travel_home:
+    text: |
+      You decide you have seen enough of this foreign land. Gaul is soaked in blood and smoke, and every path seems to lead to another death.
+
+      You turn away from the sounds of marching and make for the long road home. Behind you, the war will continue without you — Rome and Gaul locked in their endless struggle.
+
+      Whatever happens next, you will not be there to see it.
+
+      Still, you live. And you will have tales to tell… though not all of them will be spoken aloud.
+
+      Your adventure ends here.
+    scenery: "travel_home"
+    audio: "travel_home"
+    ending: true

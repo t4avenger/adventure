@@ -262,4 +262,63 @@ describe('AdventureUI', function () {
       jest.useRealTimers();
     });
   });
+
+  describe('startStoryTextAutoScroll', function () {
+    it('does nothing when #game has no story-text-strip', function () {
+      clearGameContent();
+      expect(function () { AdventureUI.startStoryTextAutoScroll(); }).not.toThrow();
+    });
+
+    it('does nothing when story-text-strip content does not overflow', function () {
+      const game = document.getElementById('game');
+      const strip = document.createElement('div');
+      strip.className = 'story-text-strip';
+      strip.scrollTop = 99;
+      Object.defineProperty(strip, 'scrollHeight', { value: 100, configurable: true });
+      Object.defineProperty(strip, 'clientHeight', { value: 100, configurable: true });
+      game.appendChild(strip);
+      AdventureUI.startStoryTextAutoScroll();
+      expect(strip.scrollTop).toBe(99);
+    });
+
+    it('resets scrollTop and starts scroll when content overflows', function () {
+      jest.useFakeTimers();
+      const game = document.getElementById('game');
+      const strip = document.createElement('div');
+      strip.className = 'story-text-strip';
+      strip.scrollTop = 50;
+      Object.defineProperty(strip, 'scrollHeight', { value: 200, configurable: true });
+      Object.defineProperty(strip, 'clientHeight', { value: 80, configurable: true });
+      game.appendChild(strip);
+      AdventureUI.startStoryTextAutoScroll();
+      expect(strip.scrollTop).toBe(0);
+      jest.advanceTimersByTime(800);
+      expect(strip.scrollTop).toBeGreaterThan(0);
+      jest.useRealTimers();
+    });
+
+    it('stops scrolling when element is disconnected from DOM', function () {
+      jest.useFakeTimers();
+      const game = document.getElementById('game');
+      const strip = document.createElement('div');
+      strip.className = 'story-text-strip';
+      strip.scrollTop = 0;
+      Object.defineProperty(strip, 'scrollHeight', { value: 200, configurable: true });
+      Object.defineProperty(strip, 'clientHeight', { value: 80, configurable: true });
+      game.appendChild(strip);
+      AdventureUI.startStoryTextAutoScroll();
+      // Advance past start delay to start scrolling
+      jest.advanceTimersByTime(800);
+      const scrollAfterFirstStep = strip.scrollTop;
+      expect(scrollAfterFirstStep).toBeGreaterThan(0);
+      // Remove element from DOM (simulates HTMX swap)
+      game.removeChild(strip);
+      expect(strip.isConnected).toBe(false);
+      // Advance timers further - scrollTop should not change since element is disconnected
+      const scrollBeforeDisconnect = strip.scrollTop;
+      jest.advanceTimersByTime(500);
+      expect(strip.scrollTop).toBe(scrollBeforeDisconnect);
+      jest.useRealTimers();
+    });
+  });
 });

@@ -44,17 +44,18 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", 400)
+		return
+	}
+	choice := r.FormValue("choice")
+
 	st, sessionID, found := s.getOrCreateState(ctx, w, r)
 	if !found {
 		http.Redirect(w, r, "/start", http.StatusFound)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form", 400)
-		return
-	}
-	choice := r.FormValue("choice")
 	answer := r.FormValue("answer")
 
 	res, err := s.Engine.ApplyChoiceWithAnswer(&st, choice, answer)
@@ -73,6 +74,7 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	vm.SessionID = sessionID
 
 	// htmx: return #game fragment + OOB sidebars; client skips sync and only runs dice animation
 	w.Header().Set("X-Adventure-OOB", "true")
@@ -83,43 +85,61 @@ func (s *Server) handlePlay(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getOrCreateState(ctx context.Context, w http.ResponseWriter, r *http.Request) (state game.PlayerState, sessionID string, found bool) {
-	id := s.sessionID(r)
-	if id == "" {
-		id = s.Store.NewID()
-		http.SetCookie(w, &http.Cookie{
-			Name:     cookieName,
-			Value:    id,
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
-		})
-		defaultStoryID := game.DefaultStoryID
-		defaultStory := s.Engine.Stories[defaultStoryID]
-		if defaultStory == nil {
-			// No default story; use first available
-			for id, st := range s.Engine.Stories {
-				defaultStoryID = id
-				defaultStory = st
-				break
+	formID := r.FormValue("session_id")
+	cookieID := s.sessionID(r)
+	var id string
+	if formID != "" {
+		id = formID
+	} else if cookieID != "" {
+		id = cookieID
+	}
+	if id != "" {
+		var ok bool
+		var err error
+		state, ok, err = s.Store.Get(ctx, id)
+		if err != nil {
+			return game.PlayerState{}, "", false
+		}
+		if ok {
+			if formID != "" && cookieID != formID {
+				http.SetCookie(w, &http.Cookie{
+					Name:     cookieName,
+					Value:    id,
+					Path:     "/",
+					HttpOnly: true,
+					Secure:   r.TLS != nil,
+					SameSite: http.SameSiteLaxMode,
+				})
 			}
+			return state, id, true
 		}
-		if defaultStory != nil {
-			state = game.NewPlayer(defaultStoryID, defaultStory.Start)
-		} else {
-			state = game.NewPlayer("", "")
+		// id was provided (e.g. cookie) but session not in store -> stale/invalid
+		return game.PlayerState{}, "", false
+	}
+	id = s.Store.NewID()
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieName,
+		Value:    id,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+	})
+	defaultStoryID := game.DefaultStoryID
+	defaultStory := s.Engine.Stories[defaultStoryID]
+	if defaultStory == nil {
+		for k, st := range s.Engine.Stories {
+			defaultStoryID = k
+			defaultStory = st
+			break
 		}
-		_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
-		return state, id, true
 	}
-
-	var ok bool
-	var err error
-	state, ok, err = s.Store.Get(ctx, id)
-	if err != nil || !ok {
-		// Session exists but state not found (e.g. store cleared). Caller should redirect to /start.
-		return game.PlayerState{}, id, false
+	if defaultStory != nil {
+		state = game.NewPlayer(defaultStoryID, defaultStory.Start)
+	} else {
+		state = game.NewPlayer("", "")
 	}
+	_ = s.Store.Put(ctx, id, state) //nolint:errcheck // Best effort: continue even if store fails
 	return state, id, true
 }
 
@@ -139,6 +159,7 @@ type BattleChoice struct {
 
 // ViewModel contains data for rendering a game view.
 type ViewModel struct {
+	SessionID          string // sent with /play so session is found when cookie is missing (e.g. HTTP)
 	Node               *game.Node
 	State              game.PlayerState
 	Message            string
