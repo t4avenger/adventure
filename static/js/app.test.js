@@ -296,5 +296,29 @@ describe('AdventureUI', function () {
       expect(strip.scrollTop).toBeGreaterThan(0);
       jest.useRealTimers();
     });
+
+    it('stops scrolling when element is disconnected from DOM', function () {
+      jest.useFakeTimers();
+      const game = document.getElementById('game');
+      const strip = document.createElement('div');
+      strip.className = 'story-text-strip';
+      strip.scrollTop = 0;
+      Object.defineProperty(strip, 'scrollHeight', { value: 200, configurable: true });
+      Object.defineProperty(strip, 'clientHeight', { value: 80, configurable: true });
+      game.appendChild(strip);
+      AdventureUI.startStoryTextAutoScroll();
+      // Advance past start delay to start scrolling
+      jest.advanceTimersByTime(800);
+      const scrollAfterFirstStep = strip.scrollTop;
+      expect(scrollAfterFirstStep).toBeGreaterThan(0);
+      // Remove element from DOM (simulates HTMX swap)
+      game.removeChild(strip);
+      expect(strip.isConnected).toBe(false);
+      // Advance timers further - scrollTop should not change since element is disconnected
+      const scrollBeforeDisconnect = strip.scrollTop;
+      jest.advanceTimersByTime(500);
+      expect(strip.scrollTop).toBe(scrollBeforeDisconnect);
+      jest.useRealTimers();
+    });
   });
 });

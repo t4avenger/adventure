@@ -224,6 +224,8 @@
     const stepMs = 60;
     const startDelayMs = 800;
     function run() {
+      // Stop if element was removed from DOM during HTMX swap
+      if (!strip.isConnected) return;
       const maxScroll = strip.scrollHeight - strip.clientHeight;
       if (strip.scrollTop >= maxScroll) return;
       strip.scrollTop = Math.min(strip.scrollTop + scrollStep, maxScroll);
