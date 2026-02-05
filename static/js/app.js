@@ -5,6 +5,8 @@
 (function (global) {
   'use strict';
 
+  var storyTextScrollTimer;
+
   function updateSidebarStats() {
     const statsEl = document.querySelector('#game .stats-update') || document.querySelector('.stats-update');
     if (statsEl) {
@@ -209,6 +211,29 @@
     updateSceneAudio();
   }
 
+  /** When story text overflows, scroll slowly from top to bottom once (one scroll per node). */
+  function startStoryTextAutoScroll() {
+    const gameEl = document.querySelector('#game');
+    const strip = gameEl ? gameEl.querySelector('.story-text-strip') : null;
+    if (!strip || strip.scrollHeight <= strip.clientHeight) return;
+    if (storyTextScrollTimer != null) {
+      clearTimeout(storyTextScrollTimer);
+    }
+    strip.scrollTop = 0;
+    const scrollStep = 1;
+    const stepMs = 60;
+    const startDelayMs = 800;
+    function run() {
+      const maxScroll = strip.scrollHeight - strip.clientHeight;
+      if (strip.scrollTop >= maxScroll) return;
+      strip.scrollTop = Math.min(strip.scrollTop + scrollStep, maxScroll);
+      if (strip.scrollTop < maxScroll) {
+        storyTextScrollTimer = setTimeout(run, stepMs);
+      }
+    }
+    storyTextScrollTimer = setTimeout(run, startDelayMs);
+  }
+
   /** Run dice roll animation on sidebar dice (used after OOB swap; server already set content). */
   function animateSidebarDice() {
     const leftLast = document.querySelector('#sidebar-left .player-dice-last');
@@ -239,6 +264,7 @@
       if (isOOB) {
         setTimeout(animateSidebarDice, 10);
       }
+      startStoryTextAutoScroll();
     });
   }
 
@@ -251,6 +277,7 @@
     runUpdaters,
     updateSceneAudio,
     animateSidebarDice,
+    startStoryTextAutoScroll,
     init
   };
 

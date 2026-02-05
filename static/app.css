@@ -396,7 +396,8 @@ html, body {
 }
 .story-text-strip {
   flex-shrink: 0;
-  max-height: 150px;
+  min-height: 240px;
+  max-height: 380px;
   overflow-y: auto;
   padding: 16px 20px;
   background: #0a0a0a;
@@ -472,7 +473,7 @@ html, body {
   position: relative;
   overflow: hidden;
   flex: 1;
-  min-height: 240px;
+  min-height: 160px;
   border: 2px solid #452c5c;
   border-radius: 0;
   background-color: #181428;

@@ -262,4 +262,39 @@ describe('AdventureUI', function () {
       jest.useRealTimers();
     });
   });
+
+  describe('startStoryTextAutoScroll', function () {
+    it('does nothing when #game has no story-text-strip', function () {
+      clearGameContent();
+      expect(function () { AdventureUI.startStoryTextAutoScroll(); }).not.toThrow();
+    });
+
+    it('does nothing when story-text-strip content does not overflow', function () {
+      const game = document.getElementById('game');
+      const strip = document.createElement('div');
+      strip.className = 'story-text-strip';
+      strip.scrollTop = 99;
+      Object.defineProperty(strip, 'scrollHeight', { value: 100, configurable: true });
+      Object.defineProperty(strip, 'clientHeight', { value: 100, configurable: true });
+      game.appendChild(strip);
+      AdventureUI.startStoryTextAutoScroll();
+      expect(strip.scrollTop).toBe(99);
+    });
+
+    it('resets scrollTop and starts scroll when content overflows', function () {
+      jest.useFakeTimers();
+      const game = document.getElementById('game');
+      const strip = document.createElement('div');
+      strip.className = 'story-text-strip';
+      strip.scrollTop = 50;
+      Object.defineProperty(strip, 'scrollHeight', { value: 200, configurable: true });
+      Object.defineProperty(strip, 'clientHeight', { value: 80, configurable: true });
+      game.appendChild(strip);
+      AdventureUI.startStoryTextAutoScroll();
+      expect(strip.scrollTop).toBe(0);
+      jest.advanceTimersByTime(800);
+      expect(strip.scrollTop).toBeGreaterThan(0);
+      jest.useRealTimers();
+    });
+  });
 });
