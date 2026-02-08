@@ -22,6 +22,7 @@ type PlayerState struct {
 	Name         string // character display name
 	Avatar       string // avatar ID e.g. "male_young"
 	Stats        Stats
+	RerollUsed   bool // true once stats have been rerolled on setup
 	Flags        map[string]bool
 	Enemies      []EnemyState // 1–3 shown individually; 4+ stored as one "Horde" entry
 	VisitedNodes []string     // node IDs in order visited (for treasure map)

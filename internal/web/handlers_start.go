@@ -98,6 +98,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		StrengthDice:     statDice[0],
 		LuckDice:         statDice[1],
 		HealthDice:       statDice[2],
+		RerollUsed:       st.RerollUsed,
 		SessionID:        id,
 		Name:             st.Name,
 		Avatar:           st.Avatar,
@@ -143,8 +144,15 @@ func (s *Server) handleReroll(w http.ResponseWriter, r *http.Request) {
 		st.StoryID = storyID
 	}
 
-	stats, statDice := game.RollStatsDetailed()
-	st.Stats = stats
+	var statDice [3][2]int
+	if !st.RerollUsed {
+		stats, dice := game.RollStatsDetailed()
+		st.Stats = stats
+		st.RerollUsed = true
+		statDice = dice
+	} else {
+		_, statDice = game.RollStatsDetailed()
+	}
 	if err := s.Store.Put(ctx, sessionID, st); err != nil {
 		http.Error(w, "failed to save state", 500)
 		return
@@ -155,6 +163,7 @@ func (s *Server) handleReroll(w http.ResponseWriter, r *http.Request) {
 		StrengthDice:     statDice[0],
 		LuckDice:         statDice[1],
 		HealthDice:       statDice[2],
+		RerollUsed:       st.RerollUsed,
 		SessionID:        sessionID,
 		Name:             st.Name,
 		Avatar:           st.Avatar,
@@ -213,6 +222,8 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 				avatar = game.DefaultAvatar
 			}
 			st.Avatar = avatar
+			// Lock rerolls once the adventure begins.
+			st.RerollUsed = true
 			if err := s.Store.Put(ctx, sessionIDFromForm, st); err != nil {
 				http.Error(w, "failed to save state", 500)
 				return
@@ -261,6 +272,8 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 		avatar = game.DefaultAvatar
 	}
 	st.Avatar = avatar
+	// Lock rerolls once the adventure begins.
+	st.RerollUsed = true
 	if err := s.Store.Put(ctx, sessionID, st); err != nil {
 		http.Error(w, "failed to save state", 500)
 		return

@@ -549,14 +549,14 @@ func TestCheckRoll(t *testing.T) {
 
 func TestApplyEffects_ClampStrengthAndLuckBounds(t *testing.T) {
 	player := NewPlayer("test", "start")
-	player.Stats.Strength = 12
+	player.Stats.Strength = MaxStrength
 	player.Stats.Luck = 1
 
 	effects := []Effect{
 		{
 			Op:    "add",
 			Stat:  "strength",
-			Value: 5, // would exceed MaxStat
+			Value: 5, // would exceed MaxStrength
 		},
 		{
 			Op:    "add",
@@ -567,8 +567,8 @@ func TestApplyEffects_ClampStrengthAndLuckBounds(t *testing.T) {
 
 	applyEffects(&player, effects)
 
-	if player.Stats.Strength != MaxStat {
-		t.Errorf("Expected Strength clamped to %d, got %d", MaxStat, player.Stats.Strength)
+	if player.Stats.Strength != MaxStrength {
+		t.Errorf("Expected Strength clamped to %d, got %d", MaxStrength, player.Stats.Strength)
 	}
 	if player.Stats.Luck != MinStat {
 		t.Errorf("Expected Luck clamped to %d, got %d", MinStat, player.Stats.Luck)

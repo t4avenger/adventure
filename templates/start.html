@@ -41,7 +41,7 @@
         hx-post="/reroll"
         hx-target="#game"
         hx-swap="innerHTML"
-        hx-include="closest form">
+        hx-include="closest form" {{if .RerollUsed}}disabled aria-disabled="true"{{end}}>
         Reroll Stats
       </button>
       <button type="submit" class="btn primary">Begin Adventure</button>

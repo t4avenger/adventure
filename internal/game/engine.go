@@ -13,10 +13,12 @@ import (
 )
 
 const (
-	// MinStat and MaxStat bound Strength and Luck.
+	// MinStat is the minimum value for Strength and Luck.
 	MinStat = 1
-	// MaxStat is the maximum value for Strength and Luck stats.
-	MaxStat = 12
+	// MaxStrength is the maximum value for Strength.
+	MaxStrength = 18
+	// MaxLuck is the maximum value for Luck.
+	MaxLuck = 12
 
 	// MinHealth is the lowest health a player can have; 0 means dead.
 	MinHealth = 0
@@ -535,12 +537,19 @@ func applyEffects(st *PlayerState, effs []Effect) {
 		// Apply global bounds for stats regardless of story-provided
 		// clamps so that rules are always enforced.
 		switch ef.Stat {
-		case StatStrength, StatLuck:
+		case StatStrength:
 			if nv < MinStat {
 				nv = MinStat
 			}
-			if nv > MaxStat {
-				nv = MaxStat
+			if nv > MaxStrength {
+				nv = MaxStrength
+			}
+		case StatLuck:
+			if nv < MinStat {
+				nv = MinStat
+			}
+			if nv > MaxLuck {
+				nv = MaxLuck
 			}
 		case StatHealth:
 			if nv < MinHealth {

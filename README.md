@@ -5,7 +5,7 @@ A classic text-based adventure game engine inspired by ZX81-style gamebooks, bui
 ## Features
 
 - **Interactive Story System**: YAML-based story definitions with branching narratives
-- **Character Stats**: Strength, Luck, and Health with bounded values (1-12 for Strength/Luck, 0+ for Health)
+- **Character Stats**: Strength, Luck, and Health with bounded values (1-18 for Strength, 1-12 for Luck, 0+ for Health)
 - **Combat System**: Opposed-roll battles where player and enemy roll 2d6 + Strength, with multi-round interactive combat
 - **Multi-Enemy Battles**: Fight 1–3 enemies (choose which to attack or use Luck on) or 4+ as a single **Horde** (combined health, mean strength for balance)
 - **Luck-Based Attacks**: Special attacks that deal extra damage but reduce Luck
@@ -186,14 +186,15 @@ go test ./internal/session/...
 ### Character Creation
 
 - Players start by rolling stats:
-  - **Strength**: 2d6 (range: 2-12, clamped to 1-12)
+  - **Strength**: 2d6 + 6 (range: 8-18, clamped to 1-18)
   - **Luck**: 2d6 (range: 2-12, clamped to 1-12)
   - **Health**: 2d6 + 6 (range: 8-18)
-- Players can reroll stats before beginning their adventure
+- Players can reroll stats once before beginning their adventure
 
 ### Stat Rules
 
-- **Strength** and **Luck**: Always clamped between 1 and 12
+- **Strength**: Always clamped between 1 and 18
+- **Luck**: Always clamped between 1 and 12
 - **Health**: Minimum 0 (death), no maximum cap
 - Stats can be modified by story events (effects)
 - Effects can specify `clampMin` and `clampMax` values, but global bounds are always enforced
