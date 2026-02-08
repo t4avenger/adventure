@@ -430,57 +430,60 @@ func testBattleServer(t *testing.T, battleNext string) *Server {
 	return &Server{Engine: engine, Store: store, Tmpl: tmpl}
 }
 
-func TestHandlePlay_BattleNode_RunAwayBehavior(t *testing.T) {
-	tests := []struct {
-		name        string
-		battleNext  string // empty means no Next on battle choice
-		wantRunAway bool
-	}{
-		{
-			name:        "no_run_away_without_next",
-			battleNext:  "",
-			wantRunAway: false,
-		},
-		{
-			name:        "run_away_with_next",
-			battleNext:  "escaped",
-			wantRunAway: true,
-		},
-	}
+func TestBattleRunAwayWithoutNext(t *testing.T) {
+	body := executeBattleFight(t, "") // no next destination
+	assertContains(t, body, "Attack Goblin")
+	assertNotContains(t, body, "Run away")
+}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			srv := testBattleServer(t, tc.battleNext)
-			ctx := context.Background()
-			st := game.NewPlayer(testStoryID, "start")
-			st.NodeID = testNodeRoad
-			st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
-			id := srv.Store.NewID()
-			if err := srv.Store.Put(ctx, id, st); err != nil {
-				t.Fatalf("Put: %v", err)
-			}
-			req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
-			rec := httptest.NewRecorder()
-			srv.Routes().ServeHTTP(rec, req)
-			if rec.Code != http.StatusOK {
-				t.Errorf("Expected 200, got %d", rec.Code)
-			}
-			body := rec.Body.String()
-			// Attack choices should always be present in battle
-			if !strings.Contains(body, "Attack Goblin") {
-				t.Error("Expected 'Attack Goblin' in response")
-			}
-			// Run away should only appear when battle choice has 'next' defined
-			hasRunAway := strings.Contains(body, "Run away")
-			if tc.wantRunAway && !hasRunAway {
-				t.Error("Expected 'Run away' option when battle choice has 'next' field")
-			}
-			if !tc.wantRunAway && hasRunAway {
-				t.Error("Expected NO 'Run away' option when battle choice has no 'next' field")
-			}
-		})
+func TestBattleRunAwayWithNext(t *testing.T) {
+	body := executeBattleFight(t, "escaped") // has next destination
+	assertContains(t, body, "Attack Goblin")
+	assertContains(t, body, "Run away")
+}
+
+// executeBattleFight sets up a battle and returns the response body after choosing fight.
+func executeBattleFight(t *testing.T, battleNext string) string {
+	t.Helper()
+	srv := testBattleServer(t, battleNext)
+	ctx := context.Background()
+	st := game.NewPlayer(testStoryID, "start")
+	st.NodeID = testNodeRoad
+	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
+	id := srv.Store.NewID()
+	err := srv.Store.Put(ctx, id, st)
+	require(t, err == nil, "Put failed: %v", err)
+
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	require(t, rec.Code == http.StatusOK, "Expected 200, got %d", rec.Code)
+	return rec.Body.String()
+}
+
+// require fails the test if condition is false.
+func require(t *testing.T, condition bool, format string, args ...interface{}) {
+	t.Helper()
+	if !condition {
+		t.Fatalf(format, args...)
+	}
+}
+
+// assertContains fails if body does not contain substr.
+func assertContains(t *testing.T, body, substr string) {
+	t.Helper()
+	if !strings.Contains(body, substr) {
+		t.Errorf("Expected %q in response", substr)
+	}
+}
+
+// assertNotContains fails if body contains substr.
+func assertNotContains(t *testing.T, body, substr string) {
+	t.Helper()
+	if strings.Contains(body, substr) {
+		t.Errorf("Did not expect %q in response", substr)
 	}
 }
 
