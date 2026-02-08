@@ -432,36 +432,19 @@ func testBattleServer(t *testing.T, battleNext string) *Server {
 
 func TestHandlePlay_BattleNode_RunAwayBehavior(t *testing.T) {
 	tests := []struct {
-		name          string
-		battleNext    string // empty means no Next on battle choice
-		wantAttack    bool
-		wantRunAway   bool
-		attackText    string
-		runAwayErrMsg string
+		name        string
+		battleNext  string // empty means no Next on battle choice
+		wantRunAway bool
 	}{
 		{
-			name:          "shows_attack_choices",
-			battleNext:    "",
-			wantAttack:    true,
-			wantRunAway:   false,
-			attackText:    "Attack",
-			runAwayErrMsg: "",
+			name:        "no_run_away_without_next",
+			battleNext:  "",
+			wantRunAway: false,
 		},
 		{
-			name:          "no_run_away_without_next",
-			battleNext:    "",
-			wantAttack:    true,
-			wantRunAway:   false,
-			attackText:    "Attack Goblin",
-			runAwayErrMsg: "Expected NO 'Run away' option when battle choice has no 'next' field",
-		},
-		{
-			name:          "run_away_with_next",
-			battleNext:    "escaped",
-			wantAttack:    true,
-			wantRunAway:   true,
-			attackText:    "Attack Goblin",
-			runAwayErrMsg: "Expected 'Run away' option when battle choice has 'next' field",
+			name:        "run_away_with_next",
+			battleNext:  "escaped",
+			wantRunAway: true,
 		},
 	}
 
@@ -485,15 +468,17 @@ func TestHandlePlay_BattleNode_RunAwayBehavior(t *testing.T) {
 				t.Errorf("Expected 200, got %d", rec.Code)
 			}
 			body := rec.Body.String()
-			if tc.wantAttack && !strings.Contains(body, tc.attackText) {
-				t.Errorf("Expected %q in response", tc.attackText)
+			// Attack choices should always be present in battle
+			if !strings.Contains(body, "Attack Goblin") {
+				t.Error("Expected 'Attack Goblin' in response")
 			}
+			// Run away should only appear when battle choice has 'next' defined
 			hasRunAway := strings.Contains(body, "Run away")
 			if tc.wantRunAway && !hasRunAway {
-				t.Error(tc.runAwayErrMsg)
+				t.Error("Expected 'Run away' option when battle choice has 'next' field")
 			}
 			if !tc.wantRunAway && hasRunAway {
-				t.Error("Expected NO 'Run away' option")
+				t.Error("Expected NO 'Run away' option when battle choice has no 'next' field")
 			}
 		})
 	}

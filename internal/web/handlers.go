@@ -188,29 +188,26 @@ func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outc
 		Enemies:        st.Enemies,
 	}
 	if len(st.Enemies) > 0 {
-		var battleKey string
-		var battleNext string
+		// Find the battle choice to build effective choices for combat UI.
 		for i := range n.Choices {
-			if n.Choices[i].Battle != nil {
-				battleKey = n.Choices[i].Key
-				battleNext = n.Choices[i].Next
-				break
+			if n.Choices[i].Battle == nil {
+				continue
 			}
-		}
-		if battleKey != "" {
-			vm.BattleChoicePrefix = battleKey
-			for i, e := range st.Enemies {
-				idxStr := strconv.Itoa(i)
+			battleChoice := &n.Choices[i]
+			vm.BattleChoicePrefix = battleChoice.Key
+			for j, e := range st.Enemies {
+				idxStr := strconv.Itoa(j)
 				vm.EffectiveChoices = append(vm.EffectiveChoices,
-					BattleChoice{Key: battleKey + ":attack:" + idxStr, Text: "Attack " + e.Name},
-					BattleChoice{Key: battleKey + ":luck:" + idxStr, Text: "Luck " + e.Name},
+					BattleChoice{Key: battleChoice.Key + ":attack:" + idxStr, Text: "Attack " + e.Name},
+					BattleChoice{Key: battleChoice.Key + ":luck:" + idxStr, Text: "Luck " + e.Name},
 				)
 			}
 			// Only offer "Run away" if the battle choice has a 'next' destination defined.
 			// Without 'next', the engine cannot route the run action, so we hide the option.
-			if battleNext != "" {
-				vm.EffectiveChoices = append(vm.EffectiveChoices, BattleChoice{Key: battleKey + ":run", Text: "Run away"})
+			if battleChoice.Next != "" {
+				vm.EffectiveChoices = append(vm.EffectiveChoices, BattleChoice{Key: battleChoice.Key + ":run", Text: "Run away"})
 			}
+			break
 		}
 	}
 	return vm, nil
