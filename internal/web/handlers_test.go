@@ -16,6 +16,7 @@ import (
 )
 
 const testStoryID = "test"
+const testNodeRoad = "road"
 
 func testServer(t *testing.T) *Server {
 	t.Helper()
@@ -379,31 +380,39 @@ func TestHandleMap_NoSession_RedirectsToStart(t *testing.T) {
 	}
 }
 
-func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
-	// Story with a node that has a battle choice so makeViewModel builds EffectiveChoices.
-	story := &game.Story{
-		Start: "start",
-		Nodes: map[string]*game.Node{
-			"start": {
-				Text: "Start.",
-				Choices: []game.Choice{
-					{Key: "go", Text: "Go to road", Next: "road"},
-				},
+// testBattleServer creates a Server with a battle story for testing.
+// If battleNext is non-empty, the battle choice will have a Next field set.
+func testBattleServer(t *testing.T, battleNext string) *Server {
+	t.Helper()
+	nodes := map[string]*game.Node{
+		"start": {
+			Text: "Start.",
+			Choices: []game.Choice{
+				{Key: "go", Text: "Go to road", Next: testNodeRoad},
 			},
-			"road": {
-				Text: "A goblin blocks the path.",
-				Choices: []game.Choice{
-					{
-						Key:  "fight",
-						Text: "Fight",
-						Battle: &game.Battle{
-							Enemies: []game.Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
-						},
+		},
+		testNodeRoad: {
+			Text: "A goblin blocks the path.",
+			Choices: []game.Choice{
+				{
+					Key:  "fight",
+					Text: "Fight",
+					Next: battleNext,
+					Battle: &game.Battle{
+						Enemies:       []game.Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
+						OnVictoryNext: "victory",
+						OnDefeatNext:  "defeat",
 					},
 				},
 			},
 		},
+		"victory": {Text: "You won!", Ending: true},
+		"defeat":  {Text: "You lost!", Ending: true},
 	}
+	if battleNext != "" {
+		nodes[battleNext] = &game.Node{Text: "You escaped!", Ending: true}
+	}
+	story := &game.Story{Start: "start", Nodes: nodes}
 	engine := &game.Engine{Stories: map[string]*game.Story{testStoryID: story}}
 	store := session.NewMemoryStore[game.PlayerState]()
 	tmplDir := filepath.Join("..", "..", "templates")
@@ -418,27 +427,63 @@ func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
 		filepath.Join(tmplDir, "game_response.html"),
 		filepath.Join(tmplDir, "start.html"),
 	))
-	srv := &Server{Engine: engine, Store: store, Tmpl: tmpl}
+	return &Server{Engine: engine, Store: store, Tmpl: tmpl}
+}
 
+func TestBattleRunAwayWithoutNext(t *testing.T) {
+	body := executeBattleFight(t, "") // no next destination
+	assertContains(t, body, "Attack Goblin")
+	assertNotContains(t, body, "Run away")
+}
+
+func TestBattleRunAwayWithNext(t *testing.T) {
+	body := executeBattleFight(t, "escaped") // has next destination
+	assertContains(t, body, "Attack Goblin")
+	assertContains(t, body, "Run away")
+}
+
+// executeBattleFight sets up a battle and returns the response body after choosing fight.
+func executeBattleFight(t *testing.T, battleNext string) string {
+	t.Helper()
+	srv := testBattleServer(t, battleNext)
 	ctx := context.Background()
 	st := game.NewPlayer(testStoryID, "start")
-	st.NodeID = "road" // already at road
+	st.NodeID = testNodeRoad
 	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
 	id := srv.Store.NewID()
-	if err := srv.Store.Put(ctx, id, st); err != nil {
-		t.Fatalf("Put: %v", err)
-	}
+	err := srv.Store.Put(ctx, id, st)
+	require(t, err == nil, "Put failed: %v", err)
+
 	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
 	rec := httptest.NewRecorder()
 	srv.Routes().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected 200, got %d", rec.Code)
+	require(t, rec.Code == http.StatusOK, "Expected 200, got %d", rec.Code)
+	return rec.Body.String()
+}
+
+// require fails the test if condition is false.
+func require(t *testing.T, condition bool, format string, args ...interface{}) {
+	t.Helper()
+	if !condition {
+		t.Fatalf(format, args...)
 	}
-	body := rec.Body.String()
-	if !strings.Contains(body, "Attack") {
-		t.Error("Expected response to contain battle choice 'Attack' from makeViewModel EffectiveChoices")
+}
+
+// assertContains fails if body does not contain substr.
+func assertContains(t *testing.T, body, substr string) {
+	t.Helper()
+	if !strings.Contains(body, substr) {
+		t.Errorf("Expected %q in response", substr)
+	}
+}
+
+// assertNotContains fails if body contains substr.
+func assertNotContains(t *testing.T, body, substr string) {
+	t.Helper()
+	if strings.Contains(body, substr) {
+		t.Errorf("Did not expect %q in response", substr)
 	}
 }
 
