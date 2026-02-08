@@ -17,6 +17,7 @@ type StartViewModel struct {
 	StrengthDice     [2]int // two d6 for Strength
 	LuckDice         [2]int
 	HealthDice       [2]int
+	RerollUsed       bool
 	SessionID        string   // so Begin request can use same session if cookie not sent
 	Name             string   // character display name
 	Avatar           string   // avatar ID

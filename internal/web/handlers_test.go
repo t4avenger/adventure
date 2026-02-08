@@ -98,6 +98,50 @@ func TestHandleReroll(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200, got %d", rec.Code)
 	}
+	updated, ok, err := srv.Store.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !ok {
+		t.Fatal("Expected updated session")
+	}
+	if !updated.RerollUsed {
+		t.Error("Expected reroll flag set after first reroll")
+	}
+}
+
+func TestHandleReroll_OncePerSession(t *testing.T) {
+	srv := testServer(t)
+	ctx := context.Background()
+	st := game.NewPlayer("test", "start")
+	st.Stats = game.Stats{Strength: 99, Luck: 99, Health: 99}
+	st.RerollUsed = true
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/reroll", strings.NewReader("session_id="+id+"&name=Hero&avatar=male_young"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	updated, ok, err := srv.Store.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !ok {
+		t.Fatal("Expected updated session")
+	}
+	if updated.Stats != st.Stats {
+		t.Errorf("Expected stats unchanged after reroll used, got %+v", updated.Stats)
+	}
+	if !updated.RerollUsed {
+		t.Error("Expected reroll flag to stay set")
+	}
 }
 
 func TestHandleBegin(t *testing.T) {

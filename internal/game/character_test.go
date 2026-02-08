@@ -9,9 +9,9 @@ func TestRollStats(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		stats := RollStats()
 
-		// Strength: 2d6 = 2-12
-		if stats.Strength < 2 || stats.Strength > 12 {
-			t.Errorf("Strength out of range: got %d, expected 2-12", stats.Strength)
+		// Strength: 2d6 + 6 = 8-18
+		if stats.Strength < 8 || stats.Strength > 18 {
+			t.Errorf("Strength out of range: got %d, expected 8-18", stats.Strength)
 		}
 
 		// Luck: 2d6 = 2-12
@@ -58,8 +58,8 @@ func TestRollStatsDetailed(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		stats, dice := RollStatsDetailed()
 
-		if stats.Strength != dice[0][0]+dice[0][1] {
-			t.Errorf("Strength %d != dice sum %d+%d", stats.Strength, dice[0][0], dice[0][1])
+		if stats.Strength != dice[0][0]+dice[0][1]+6 {
+			t.Errorf("Strength %d != dice sum %d+%d+6", stats.Strength, dice[0][0], dice[0][1])
 		}
 		if stats.Luck != dice[1][0]+dice[1][1] {
 			t.Errorf("Luck %d != dice sum %d+%d", stats.Luck, dice[1][0], dice[1][1])
