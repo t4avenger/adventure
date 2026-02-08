@@ -267,6 +267,7 @@ nodes:
       Yet die when I sleep.
 
       What am I?
+    scenery: "caught"
     choices:
       - key: "answer"
         text: "Speak your answer"
@@ -349,9 +350,212 @@ nodes:
 
   gaul_treachery:
     text: |
-      You follow the Gauls into the shadows. The passage was left blank in the original story — your fate here is left to the woods and the war.
+      You follow the Gauls along the woodland path, keeping your distance and moving only when the trees and shadows allow. Before long the trail opens into a circular clearing, ringed with old pines and churned earth.
+
+      The warband spreads out, fanning to the edges of the clearing as if by instinct. Their leaders step into the centre.
+
+      Someone is already waiting.
+
+      To your shock, it is a Roman.
+
+      The two sides speak in low voices. You cannot get close enough to hear their words, but you see enough. A leather pouch is thrown down. Coins spill across the ground, glinting in the thin light. The Roman stoops, gathers them up, and hides them beneath his cloak.
+
+      Your stomach tightens.
+
+      A traitor.
+
+      He is selling information — perhaps the army's position, perhaps its plans. Whatever the details, the meaning is clear. The Gauls are preparing to strike when the Romans least expect it.
+
+      You must warn the camp.
+
+      But if you leave now, the traitor will escape.
+    scenery: "gaul_treachery"
+    choices:
+      - key: "warn_camp"
+        text: "Follow the Gauls until you can slip ahead and warn the camp"
+        next: "camp"
+      - key: "chase_traitor"
+        text: "Chase the Roman traitor before he can vanish into the woods"
+        next: "traitor"
+
+  camp:
+    text: |
+      You follow the Gauls as dusk settles over the woods. The air grows colder, and the last light bleeds away behind the trees. Ahead, torchlight flickers through the branches.
+
+      The Roman camp.
+
+      The warband slows. Like wolves circling a wounded beast, the Gauls spread out, slipping between the trees and moving around the edge of the camp. You can see the shape of their plan now — they mean to strike from all sides, swift and without warning.
+
+      You must get past them.
+
+      If you are caught, you will be silenced… and the camp will fall.
+
+      Roll for Luck.
+    scenery: "camp"
+    choices:
+      - key: "luck"
+        text: "Roll for Luck"
+        check:
+          stat: "luck"
+          roll: "2d6"
+          target: "stat"
+        onSuccessNext: "sound_the_alarm"
+        onFailureNext: "gauls_win"
+
+  traitor:
+    text: |
+      You watch the Roman as he leaves the clearing. He heads in your direction. Quickly you slip into the shadows, pressing yourself against the trunk of a tree as he passes only a few paces away.
+
+      Once he is gone, you follow.
+
+      The sounds of the Gauls fade behind you. Soon there is only the whisper of wind through the branches and the soft crunch of boots on damp earth. When you are certain the warband is too far away to hear or help him, you step onto the path ahead.
+
+      Your sword slides free of its scabbard.
+
+      "Halt," you say.
+
+      The traitor freezes. Slowly, he turns. For a heartbeat you see surprise in his eyes — then it hardens into something colder. He draws his own blade and settles into a fighting stance, ready and trained.
+
+      There will be no surrender here.
+
+      Prepare for battle.
+    scenery: "traitor"
+    choices:
+      - key: "fight"
+        text: "Fight (Strength check)"
+        mode: "battle_attack"
+        battle:
+          enemyName: "Roman Traitor"
+          enemyStrength: 11
+          enemyHealth: 3
+          onVictoryNext: "dying_breath"
+          onDefeatNext: "beheaded"
+
+  dying_breath:
+    text: |
+      The Roman staggers as your blade strikes true. He tries to steady himself, but the wound is too deep. His sword slips from his fingers and he collapses to the ground, breath coming in wet, broken gasps.
+
+      You lower your weapon and step closer. The traitor's eyes find yours, wide with pain and fear. With trembling fingers he beckons you nearer.
+
+      You kneel.
+
+      There is no time. The Gauls will attack tonight.
+
+      You must warn the camp.
+    scenery: "dying_breath"
+    choices:
+      - key: "next"
+        text: "Sound the alarm"
+        next: "sound_the_alarm"
+
+  sound_the_alarm:
+    text: |
+      You break into a run, crashing through brush and low branches as the Roman camp lights flicker ahead. A sentry steps from the darkness, spear raised — but your heart lifts when you recognise him. One of the legionaries from the march.
+
+      You stagger toward him, shouting for him to raise the alarm.
+
+      He grabs you before you can reach the campfire, shaking you hard and demanding to know what madness has taken you. You force the words out between gasps — Gauls in the woods, surrounding the camp, ready to strike.
+
+      The legionary hesitates only a moment.
+
+      Then he turns and sounds the alarm.
+
+      The camp erupts into motion. Horns blare. Men spill from tents, pulling on armour, snatching up shields and blades. Generals appear, half-dressed but already barking orders. Torches are lit. Archers are gathered. Flaming arrows streak into the trees, and the night erupts with sudden fire.
+
+      There is no escape now. The battle has begun.
+
+      You take your place in the line as the Gauls surge forward. The clash is savage and close, shield against shield, steel against bone. You fight face to face in the smoke and chaos.
+
+      Then the press of bodies shifts, and you realise you have been cut off from the main force.
+
+      You are surrounded.
+
+      Three Gauls close in on you, their eyes bright with hatred. One is larger than the others, draped in trophies and painted with war markings. A chieftain.
+
+      This will be the fight of your life.
+    scenery: "sound_the_alarm"
+    choices:
+      - key: "fight"
+        text: "Fight (Strength check)"
+        mode: "battle_attack"
+        battle:
+          enemies:
+            - name: "Gaul Chieftain"
+              strength: 13
+              health: 4   
+            - name: "Gaul Left"
+              strength: 10
+              health: 3
+            - name: "Gaul Right"
+              strength: 10
+              health: 3
+          onVictoryNext: "caesar"
+          onDefeatNext: "injured"
+
+  gauls_win:
+    text: |
+      You move through the trees, keeping low, trying to slip past the Gauls unseen.
+
+      A twig snaps beneath your boot.
+
+      A voice hisses in the dark. Shapes turn toward you. Before you can run, rough hands seize you and drag you into the shadows. A blade presses against your throat.
+
+      You struggle, but it is useless. The Gauls do not shout. They do not waste time. They silence you quickly.
+
+      Moments later, the attack begins.
+
+      Screams tear through the Roman camp as fire and steel crash into sleeping men. Torches topple. Tents burn. Legionaries wake confused, only to die with swords still sheathed. The night fills with slaughter.
+
+      By dawn, the camp is nothing but smoke, blood, and broken standards.
+
+      You have failed.
 
       Your adventure ends here.
+    scenery: "gauls_win"
+    audio: "gauls_win"
+    ending: true
+
+  caesar:
+    text: |
+      As the clash of steel fades, you realise the battle is over. The Gauls are retreating into the woods, beaten at last. The Roman camp still burns in places, but the screams have stopped. For the first time in what feels like an age, you can breathe.
+
+      You lean on your sword, exhausted. Smoke stings your eyes and your arms tremble with fatigue.
+
+      The legionary who raised the alarm approaches you. He is still alive, but he is not unscarred. Blood stains his armour and his face is drawn with weariness. Without a word, you clasp forearms — a soldier's handshake. Respect earned in battle needs no speech.
+
+      A general stands behind him.
+
+      He gestures for you to follow.
+
+      You are led through the camp toward a gathering of officers and commanders, all standing in a tense silence. Their attention is fixed on one man.
+
+      As you draw nearer, you recognise him at once.
+
+      Julius Caesar.
+
+      He steps forward, calm amid the ruin, and studies you with sharp, unreadable eyes. Then he raises a hand in salute.
+
+      Word has reached him of what you have done — how you uncovered the treachery, how you warned the camp, and how you stood your ground when the Gauls struck.
+
+      Caesar praises you before his generals and rewards you with treasures from Rome: gold, fine silver, and a cloak fit for a noble.
+
+      Then he offers you more.
+
+      A place at his side. A future in the army. Perhaps even command.
+
+      You bow your head and decline. You tell him you have seen enough blood, and that you wish only to return home.
+
+      For most men, refusing Caesar would be unthinkable.
+
+      But Caesar smiles.
+
+      "You have earned the right to choose your own path," he says. "Go with my blessing."
+
+      You leave the camp with more wealth than you will ever need. In time, you return home and settle far from war and marching boots. You live out your days in peace, with a warm fire, a full cup, and stories few will ever believe.
+
+      Your adventure ends here.
+    scenery: "caesar"
+    audio: "caesar"
     ending: true
 
   travel_home:
