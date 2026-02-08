@@ -23,7 +23,7 @@
         <div class="avatar-options">
         {{range .AvatarOptions}}
           <label class="avatar-option" for="avatar-{{.}}">
-            <input id="avatar-{{.}}" type="radio" name="avatar" value="{{.}}" {{if eq $.Avatar .}}checked{{end}}>
+            <input id="avatar-{{.}}" type="radio" name="avatar" value="{{.}}" aria-label="Avatar {{.}}" {{if eq $.Avatar .}}checked{{end}}>
             <div class="avatar avatar-portrait avatar-{{.}} avatar-preview"></div>
           </label>
         {{end}}

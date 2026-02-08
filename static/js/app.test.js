@@ -224,6 +224,22 @@ describe('AdventureUI', function () {
     });
   });
 
+  describe('updateSceneryImage', function () {
+    it('hides scenery image when it fails to load', function () {
+      const game = document.getElementById('game');
+      game.innerHTML = '<div class="scenery"><img class="scenery-img" src="/scenery/demo/missing.png" /></div>';
+      const img = game.querySelector('.scenery-img');
+      AdventureUI.updateSceneryImage();
+      img.dispatchEvent(new Event('error'));
+      expect(img.style.display).toBe('none');
+    });
+
+    it('does nothing when scenery image is missing', function () {
+      clearGameContent();
+      expect(function () { AdventureUI.updateSceneryImage(); }).not.toThrow();
+    });
+  });
+
   describe('runUpdaters', function () {
     beforeEach(function () {
       global.Audio = jest.fn(function () {

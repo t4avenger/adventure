@@ -203,12 +203,25 @@
     }
   }
 
+  function updateSceneryImage() {
+    const gameEl = document.querySelector('#game');
+    const img = gameEl ? gameEl.querySelector('.scenery-img') : document.querySelector('.scenery-img');
+    if (!img) return;
+    if (img.getAttribute('data-error-bound') === 'true') return;
+    img.setAttribute('data-error-bound', 'true');
+    img.addEventListener('error', function () {
+      if (!img.isConnected) return;
+      img.style.display = 'none';
+    }, { once: true });
+  }
+
   function runUpdaters() {
     updateSidebarStats();
     updateEnemySidebar();
     updatePlayerDice();
     updateEnemyDice();
     updateSceneAudio();
+    updateSceneryImage();
   }
 
   /** When story text overflows, scroll slowly from top to bottom once (one scroll per node). */
@@ -278,6 +291,7 @@
     updateEnemyDice,
     runUpdaters,
     updateSceneAudio,
+    updateSceneryImage,
     animateSidebarDice,
     startStoryTextAutoScroll,
     init
