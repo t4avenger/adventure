@@ -21,12 +21,12 @@
       <div class="avatar-select">
         <span class="avatar-select-label">Portrait</span>
         <div class="avatar-options">
-          {{range .AvatarOptions}}
-          <label class="avatar-option">
-            <input type="radio" name="avatar" value="{{.}}" {{if eq $.Avatar .}}checked{{end}}>
+        {{range .AvatarOptions}}
+          <label class="avatar-option" for="avatar-{{.}}">
+            <input id="avatar-{{.}}" type="radio" name="avatar" value="{{.}}" {{if eq $.Avatar .}}checked{{end}}>
             <div class="avatar avatar-portrait avatar-{{.}} avatar-preview"></div>
           </label>
-          {{end}}
+        {{end}}
         </div>
       </div>
       <div class="stats-update" data-strength="{{.Stats.Strength}}" data-luck="{{.Stats.Luck}}" data-health="{{.Stats.Health}}" style="display: none;"></div>
