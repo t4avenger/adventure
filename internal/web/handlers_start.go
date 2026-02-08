@@ -222,6 +222,8 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 				avatar = game.DefaultAvatar
 			}
 			st.Avatar = avatar
+			// Lock rerolls once the adventure begins.
+			st.RerollUsed = true
 			if err := s.Store.Put(ctx, sessionIDFromForm, st); err != nil {
 				http.Error(w, "failed to save state", 500)
 				return
@@ -270,6 +272,8 @@ func (s *Server) handleBegin(w http.ResponseWriter, r *http.Request) {
 		avatar = game.DefaultAvatar
 	}
 	st.Avatar = avatar
+	// Lock rerolls once the adventure begins.
+	st.RerollUsed = true
 	if err := s.Store.Put(ctx, sessionID, st); err != nil {
 		http.Error(w, "failed to save state", 500)
 		return

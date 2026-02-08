@@ -164,6 +164,16 @@ func TestHandleBegin(t *testing.T) {
 	if rec.Header().Get("X-Adventure-OOB") != "true" {
 		t.Error("Expected X-Adventure-OOB header")
 	}
+	updated, ok, err := srv.Store.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !ok {
+		t.Fatal("Expected updated session")
+	}
+	if !updated.RerollUsed {
+		t.Error("Expected reroll to be locked after begin")
+	}
 }
 
 func TestHandlePlay(t *testing.T) {
@@ -304,6 +314,16 @@ func TestHandleBegin_WithCookieNoFormSession(t *testing.T) {
 	srv.Routes().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	updated, ok, err := srv.Store.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !ok {
+		t.Fatal("Expected updated session")
+	}
+	if !updated.RerollUsed {
+		t.Error("Expected reroll to be locked after begin")
 	}
 }
 
