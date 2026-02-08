@@ -19,7 +19,8 @@ This repo is the Adventure game (Go + HTMX). Follow these conventions.
   `make test-js` or `npm test`.
 - Maintain at least 75% coverage (`make test`). Use `make coverage-check`
   for an existing `coverage.out`.
-- Always run `make check` after changing code.
+- Always run `make check` after changing code and before final response.
+- If `make check` fails due to missing tools, run `make install-tools` and rerun `make check`.
 
 ## Docs and tooling
 
