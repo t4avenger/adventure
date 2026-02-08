@@ -549,7 +549,7 @@ func TestCheckRoll(t *testing.T) {
 
 func TestApplyEffects_ClampStrengthAndLuckBounds(t *testing.T) {
 	player := NewPlayer("test", "start")
-	player.Stats.Strength = 12
+	player.Stats.Strength = MaxStrength
 	player.Stats.Luck = 1
 
 	effects := []Effect{
