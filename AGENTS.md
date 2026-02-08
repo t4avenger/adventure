@@ -13,8 +13,8 @@ This repo is the Adventure game (Go + HTMX). Follow these conventions.
 
 - When changing game logic, handlers, or session behavior, update the matching
   `*_test.go` file.
-- Scenery handler changes must keep path validation and update
-  `internal/web/scenery_test.go`.
+- Scenery handler changes must keep path validation, validate story IDs
+  against `Engine.Stories`, and update `internal/web/scenery_test.go`.
 - If `static/js/app.js` changes, update `static/js/app.test.js` and run
   `make test-js` or `npm test`.
 - Maintain at least 75% coverage (`make test`). Use `make coverage-check`
@@ -29,5 +29,7 @@ This repo is the Adventure game (Go + HTMX). Follow these conventions.
 
 ## References
 
-- HTMX and JS refactor plan (see internal design notes or team docs)
+- HTMX and JS refactor plan: `docs/HTMX_AND_JS_REFACTOR_PLAN.md`
+- Scenery images live in `stories/<story_id>/scenery/` and are served via
+  `/scenery/<storyID>/<filename>`.
 - `make install-tools`, `make install-js`, `make check`
