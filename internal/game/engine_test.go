@@ -556,7 +556,7 @@ func TestApplyEffects_ClampStrengthAndLuckBounds(t *testing.T) {
 		{
 			Op:    "add",
 			Stat:  "strength",
-		Value: 5, // would exceed MaxStrength
+			Value: 5, // would exceed MaxStrength
 		},
 		{
 			Op:    "add",
