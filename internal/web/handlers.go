@@ -189,9 +189,11 @@ func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outc
 	}
 	if len(st.Enemies) > 0 {
 		var battleKey string
+		var battleNext string
 		for i := range n.Choices {
 			if n.Choices[i].Battle != nil {
 				battleKey = n.Choices[i].Key
+				battleNext = n.Choices[i].Next
 				break
 			}
 		}
@@ -204,7 +206,11 @@ func (s *Server) makeViewModel(st *game.PlayerState, msg string, roll *int, outc
 					BattleChoice{Key: battleKey + ":luck:" + idxStr, Text: "Luck " + e.Name},
 				)
 			}
-			vm.EffectiveChoices = append(vm.EffectiveChoices, BattleChoice{Key: battleKey + ":run", Text: "Run away"})
+			// Only offer "Run away" if the battle choice has a 'next' destination defined.
+			// Without 'next', the engine cannot route the run action, so we hide the option.
+			if battleNext != "" {
+				vm.EffectiveChoices = append(vm.EffectiveChoices, BattleChoice{Key: battleKey + ":run", Text: "Run away"})
+			}
 		}
 	}
 	return vm, nil

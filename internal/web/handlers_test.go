@@ -16,6 +16,7 @@ import (
 )
 
 const testStoryID = "test"
+const testNodeRoad = "road"
 
 func testServer(t *testing.T) *Server {
 	t.Helper()
@@ -387,10 +388,10 @@ func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
 			"start": {
 				Text: "Start.",
 				Choices: []game.Choice{
-					{Key: "go", Text: "Go to road", Next: "road"},
+					{Key: "go", Text: "Go to road", Next: testNodeRoad},
 				},
 			},
-			"road": {
+			testNodeRoad: {
 				Text: "A goblin blocks the path.",
 				Choices: []game.Choice{
 					{
@@ -422,7 +423,7 @@ func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
 
 	ctx := context.Background()
 	st := game.NewPlayer(testStoryID, "start")
-	st.NodeID = "road" // already at road
+	st.NodeID = testNodeRoad // already at road
 	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
 	id := srv.Store.NewID()
 	if err := srv.Store.Put(ctx, id, st); err != nil {
@@ -439,6 +440,149 @@ func TestHandlePlay_BattleNode_ShowsEffectiveChoices(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, "Attack") {
 		t.Error("Expected response to contain battle choice 'Attack' from makeViewModel EffectiveChoices")
+	}
+}
+
+func TestHandlePlay_BattleNode_NoRunAwayWithoutNext(t *testing.T) {
+	// Battle choice without 'next' should NOT show "Run away" option.
+	story := &game.Story{
+		Start: "start",
+		Nodes: map[string]*game.Node{
+			"start": {
+				Text: "Start.",
+				Choices: []game.Choice{
+					{Key: "go", Text: "Go to road", Next: testNodeRoad},
+				},
+			},
+			testNodeRoad: {
+				Text: "A goblin blocks the path.",
+				Choices: []game.Choice{
+					{
+						Key:  "fight",
+						Text: "Fight",
+						// No Next field - running should not be offered
+						Battle: &game.Battle{
+							Enemies:       []game.Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
+							OnVictoryNext: "victory",
+							OnDefeatNext:  "defeat",
+						},
+					},
+				},
+			},
+			"victory": {Text: "You won!", Ending: true},
+			"defeat":  {Text: "You lost!", Ending: true},
+		},
+	}
+	engine := &game.Engine{Stories: map[string]*game.Story{testStoryID: story}}
+	store := session.NewMemoryStore[game.PlayerState]()
+	tmplDir := filepath.Join("..", "..", "templates")
+	tmpl := template.Must(template.ParseFiles(
+		filepath.Join(tmplDir, "layout.html"),
+		filepath.Join(tmplDir, "layout_head.html"),
+		filepath.Join(tmplDir, "sidebar_left.html"),
+		filepath.Join(tmplDir, "sidebar_right.html"),
+		filepath.Join(tmplDir, "sidebar_left_oob.html"),
+		filepath.Join(tmplDir, "sidebar_right_oob.html"),
+		filepath.Join(tmplDir, "game.html"),
+		filepath.Join(tmplDir, "game_response.html"),
+		filepath.Join(tmplDir, "start.html"),
+	))
+	srv := &Server{Engine: engine, Store: store, Tmpl: tmpl}
+
+	ctx := context.Background()
+	st := game.NewPlayer(testStoryID, "start")
+	st.NodeID = testNodeRoad
+	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Attack Goblin") {
+		t.Error("Expected 'Attack Goblin' option")
+	}
+	if strings.Contains(body, "Run away") {
+		t.Error("Expected NO 'Run away' option when battle choice has no 'next' field")
+	}
+}
+
+func TestHandlePlay_BattleNode_RunAwayWithNext(t *testing.T) {
+	// Battle choice WITH 'next' should show "Run away" option.
+	story := &game.Story{
+		Start: "start",
+		Nodes: map[string]*game.Node{
+			"start": {
+				Text: "Start.",
+				Choices: []game.Choice{
+					{Key: "go", Text: "Go to road", Next: testNodeRoad},
+				},
+			},
+			testNodeRoad: {
+				Text: "A goblin blocks the path.",
+				Choices: []game.Choice{
+					{
+						Key:  "fight",
+						Text: "Fight",
+						Next: "escaped", // Has Next - running should be offered
+						Battle: &game.Battle{
+							Enemies:       []game.Enemy{{Name: "Goblin", Strength: 8, Health: 3}},
+							OnVictoryNext: "victory",
+							OnDefeatNext:  "defeat",
+						},
+					},
+				},
+			},
+			"escaped": {Text: "You escaped!", Ending: true},
+			"victory": {Text: "You won!", Ending: true},
+			"defeat":  {Text: "You lost!", Ending: true},
+		},
+	}
+	engine := &game.Engine{Stories: map[string]*game.Story{testStoryID: story}}
+	store := session.NewMemoryStore[game.PlayerState]()
+	tmplDir := filepath.Join("..", "..", "templates")
+	tmpl := template.Must(template.ParseFiles(
+		filepath.Join(tmplDir, "layout.html"),
+		filepath.Join(tmplDir, "layout_head.html"),
+		filepath.Join(tmplDir, "sidebar_left.html"),
+		filepath.Join(tmplDir, "sidebar_right.html"),
+		filepath.Join(tmplDir, "sidebar_left_oob.html"),
+		filepath.Join(tmplDir, "sidebar_right_oob.html"),
+		filepath.Join(tmplDir, "game.html"),
+		filepath.Join(tmplDir, "game_response.html"),
+		filepath.Join(tmplDir, "start.html"),
+	))
+	srv := &Server{Engine: engine, Store: store, Tmpl: tmpl}
+
+	ctx := context.Background()
+	st := game.NewPlayer(testStoryID, "start")
+	st.NodeID = testNodeRoad
+	st.Stats = game.Stats{Strength: 8, Luck: 8, Health: 12}
+	id := srv.Store.NewID()
+	if err := srv.Store.Put(ctx, id, st); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/play", strings.NewReader("choice=fight"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: id})
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Attack Goblin") {
+		t.Error("Expected 'Attack Goblin' option")
+	}
+	if !strings.Contains(body, "Run away") {
+		t.Error("Expected 'Run away' option when battle choice has 'next' field")
 	}
 }
 
